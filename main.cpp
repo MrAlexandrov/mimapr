@@ -1,116 +1,34 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
 #include <string>
-#include <algorithm>
-#include <sstream>
 #include <cmath>
 #include <optional>
+#include <fstream>
+#include <cassert>
 #include "matrix.hpp"
+#include "get_options.hpp"
+#include "my_gnuplot.hpp"
+
 
 using namespace NMatrix;
+using namespace NGnuplot;
+using namespace NOptions;
 
-// Тип элемента
-enum class ElementType { Unknown, Linear, Cubic };
 
-// Тип ограничения
-enum class RestrictGrade { First, Second, Third };
-
-// Настройки программы
-struct Options {
-    ElementType type = ElementType::Unknown;
-    int elemAmount = 20;  // По умолчанию
-    bool help = false;
-};
-
-// Граничное условие
-struct Restriction {
-    RestrictGrade grade;
-    double pos;
-    double val;
-};
-
-// Вывод жирного текста в консоль
-void printBold(const std::string& text) {
-    std::cout << "\x1B[1m" << text << "\x1B[0m";
-}
-
-// Вывод инструкции по использованию программы
-void printUsage() {
-    std::cout << "Usage:\n"
-              << "./mke [-l | -c] [-s <SIZE>]\n\n"
-              << "Options:\n";
-
-    printBold("\t-h, --help");
-    std::cout << "\n\t\tdisplay help.\n";
-
-    printBold("\t-s, --size");
-    std::cout << "\n\t\tset amount of elements (default is 20).\n";
-
-    printBold("\t-l, --linear");
-    std::cout << "\n\t\tUse linear equations for elements (used by default).\n";
-
-    printBold("\t-c, --cubic");
-    std::cout << "\n\t\tUse cubic equations for elements.\n";
-}
-
-// Получение настроек программы
-std::optional<Options> getOptions(int argc, char* argv[]) {
-    Options options;
-
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-
-        if (arg == "-h" || arg == "--help") {
-            printUsage();
-            options.help = true;
-            return options;
-        } else if (arg == "-l" || arg == "--linear") {
-            options.type = ElementType::Linear;
-        } else if (arg == "-c" || arg == "--cubic") {
-            options.type = ElementType::Cubic;
-        } else if (arg == "-s" || arg == "--size") {
-            if (i + 1 < argc) {
-                options.elemAmount = std::stoi(argv[++i]);
-            } else {
-                std::cerr << "Missing value for option -s.\n";
-                return std::nullopt;
-            }
-        } else {
-            std::cerr << "Unknown option: " << arg << "\n";
-            return std::nullopt;
-        }
-    }
-
-    if (options.type == ElementType::Unknown) {
-        std::cout << "Element type not specified. Using default: Linear.\n";
-        options.type = ElementType::Linear;
-    }
-
-    return options;
-}
-
-// Создание матрицы жесткости (линейные элементы)
 void makeLinearSLAU(TMatrix<>& resultMatrix, TMatrix<>& resultVector, double L, double a, double b, double c, double d, int i) {
-    resultMatrix[i][i]          += -a / L   - b / 2.0 + c * L / 3.0;
-    resultMatrix[i][i + 1]      += a / L    + b / 2.0 + c * L / 6.0;
-    resultMatrix[i + 1][i]      += a / L    - b / 2.0 + c * L / 6.0;
-    resultMatrix[i + 1][i + 1]  += -a / L   + b / 2.0 + c * L / 3.0;
+    resultMatrix[i][i]          += -a / L   - b / 2 + c * L / 3;
+    resultMatrix[i][i + 1]      += a / L    + b / 2 + c * L / 6;
+    resultMatrix[i + 1][i]      += a / L    - b / 2 + c * L / 6;
+    resultMatrix[i + 1][i + 1]  += -a / L   + b / 2 + c * L / 3;
 
-    resultVector[i][0]          += -d * L   / 2.0;
-    resultVector[i + 1][0]      += -d * L   / 2.0;
+    resultVector[i][0]          += -d * L   / 2;
+    resultVector[i + 1][0]      += -d * L   / 2;
 }
 
-// Создание матрицы жесткости (кубические элементы)
 void makeCubicSLAU(TMatrix<>& resultMatrix, 
                    TMatrix<>& resultVector, 
                    double L, 
-                   double a, 
-                   double b, 
-                   double c, 
-                   double d, 
+                   double a, double b, double c, double d, 
                    int i) {
-    // Матрица жёсткости (stiffness matrix)
     resultMatrix[i][i]          += -a *  37 / (10 * L) - b / 2       + c * 8  * L / 105;
     resultMatrix[i][i + 1]      +=  a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[i][i + 2]      += -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140;
@@ -131,25 +49,35 @@ void makeCubicSLAU(TMatrix<>& resultMatrix,
     resultMatrix[i + 3][i + 2]  +=  a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[i + 3][i + 3]  += -a *  37 / (10 * L) + b / 2       + c * 8  * L / 105;
 
-    // Вектор нагрузки (load vector)
     resultVector[i][0]          += -d * L / 8;
     resultVector[i + 1][0]      += -d * 3 * L / 8;
     resultVector[i + 2][0]      += -d * 3 * L / 8;
     resultVector[i + 3][0]      += -d * L / 8;
 }
 
-// Применение граничных условий
-void applyRestrictions(TMatrix<>& matrix, TMatrix<>& vector, Restriction restriction, double coef) {
-    int row = (restriction.grade == RestrictGrade::First ? 0 : matrix.rows() - 1);
-    if (restriction.grade == RestrictGrade::Second) {
-        vector[row][0] += coef * restriction.val;
-    } else {
-        matrix[row][row] = 1.0;
-        vector[row][0] = restriction.val;
+void applyRestrictions(TMatrix<>& matrix, TMatrix<>& vector, Restriction restriction, int row, double coef) {
+    switch (restriction.grade) {
+        case RestrictGrade::First: {
+            for (int col = 0; col < matrix.cols(); ++col) {
+                matrix[row][col] = 0.0;
+            }
+            matrix[row][row] = 1.0;
+            vector[row][0] = restriction.val;
+            break;
+        }
+        case RestrictGrade::Second: {
+            vector[row][0] += coef * (row == 0 ? restriction.val : (row == matrix.rows() - 1 ? -restriction.val : 0));
+            break;
+        }
+        case RestrictGrade::Third: {
+            matrix[row][row] += coef * restriction.val;
+            break;
+        }
+        default:
+            throw std::invalid_argument("Unknown restriction grade.");
     }
 }
 
-// Решение СЛАУ методом Гаусса
 void solveSLAU(TMatrix<>& xVector, TMatrix<>& aMatrix, TMatrix<>& bVector) {
     int size = aMatrix.rows();
     for (int i = 0; i < size - 1; ++i) {
@@ -171,7 +99,12 @@ void solveSLAU(TMatrix<>& xVector, TMatrix<>& aMatrix, TMatrix<>& bVector) {
     }
 }
 
-// Главная функция программы
+double realSolve(double x) {
+	double C1 = -(5 * exp(8) * (-3 + 2 * exp(6))) / (1 + exp(12));
+	double C2 = 5 * (2 + 3 * exp(6)) / (exp(2) * (1 + exp(12)));
+	return exp(-x) * C1 + exp(x) * C2 - 10;
+}
+
 int main(int argc, char* argv[]) {
     auto opt = getOptions(argc, argv);
     if (!opt.has_value() || opt->help) {
@@ -189,18 +122,73 @@ int main(int argc, char* argv[]) {
     TMatrix<> loadVector(size, 1, 0.0);
     TMatrix<> displacements(size, 1, 0.0);
 
-    // Заполнение матриц
-    for (int i = 0; i < size - 1; ++i) {
-        makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+    if (opt->type == ElementType::Linear) {
+        for (int i = 0; i < size - 1; ++i) {
+            makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+        }
+    } else if (opt->type == ElementType::Cubic) {
+        for (int i=0; i < size - 3; i+=3) {
+            makeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+        }
+    } else {
+        std::cerr << "ElementType::Unknown" << std::endl;
+        return -1;
     }
-
-    applyRestrictions(stiffnessMatrix, loadVector, lower, a);
-    applyRestrictions(stiffnessMatrix, loadVector, upper, a);
-
+    applyRestrictions(stiffnessMatrix, loadVector, lower, 0, a);
+    applyRestrictions(stiffnessMatrix, loadVector, upper, size - 1, a);
     solveSLAU(displacements, stiffnessMatrix, loadVector);
-
+    
+    #ifdef PRINT
     for (int i = 0; i < size; ++i) {
         std::cout << "U(" << i << ") = " << displacements[i][0] << "\n";
+    }
+    #endif // PRINT
+    
+    double maxError = 0.0;
+    std::vector<double> nodes(size);
+    std::vector<double> errors(size);
+    std::vector<double> displacementsReal(size);
+
+    double nodePosition = lower.pos;
+    for (int i = 0; i < size; ++i) {
+        double realValue = realSolve(nodePosition);
+        double error = std::fabs(displacements[i][0] - realValue);
+        maxError = std::max(maxError, error);
+
+        nodes[i] = nodePosition;
+        errors[i] = error;
+        displacementsReal[i] = realValue;
+
+        nodePosition += step / (opt->type == ElementType::Linear ? 1 : 3);
+    }
+
+    #ifdef PRINT
+    std::cout << "\nMax error: " << maxError << "\n";
+    #endif // PRINT
+    try {
+        std::string filename = (opt->type == ElementType::Linear ? "linear" : "cubic") 
+                       + std::string("_") 
+                       + std::to_string(opt->elemAmount);
+
+        std::ofstream outFile(filename + ".txt");
+        if (!outFile) {
+            throw std::ios_base::failure("Failed to open the output file: " + filename + ".txt");
+        }
+
+        for (int i = 0; i < size; ++i) {
+            outFile << nodes[i] << '\t'
+                    << displacementsReal[i] << '\t'
+                    << displacements[i][0] << '\t'
+                    << errors[i] << '\n';
+        }
+        outFile.flush();
+        #ifdef PRINT
+        std::cout << "Results successfully saved to " << filename << ".txt\n";
+        #endif // PRINT
+        plot(filename, lower.pos, upper.pos);
+
+    } catch (const std::exception& e) {
+        std::cerr << "An error occurred: " << e.what() << '\n';
     }
 
     return 0;

@@ -1,4 +1,4 @@
-PROJECT_NAME = matrix
+PROJECT_NAME = main
 
 INPUT_FILE = input.txt
 OUTPUT_FILE = output.txt
@@ -6,6 +6,7 @@ OUTPUT_FILE = output.txt
 NPROCS ?= $(shell nproc)
 
 BUILD_DIR = build
+RESULTS_DIR = results
 
 all: build test run
 
@@ -21,7 +22,7 @@ test: build
 
 run: build
 	@echo "==> Running ${PROJECT_NAME}"
-	@cd ${BUILD_DIR} && ./${PROJECT_NAME} < ../${INPUT_FILE} > ../${OUTPUT_FILE}
+	@cd ${BUILD_DIR} && ./${PROJECT_NAME}
 
 clean:
 	@echo "==> Cleaning up..."
