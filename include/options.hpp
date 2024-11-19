@@ -10,12 +10,6 @@ enum class ElementType {
     Cubic = 3 
 };
 
-struct Options {
-    ElementType type = ElementType::Unknown;
-    int elemAmount = 20;
-    bool help = false;
-};
-
 enum class RestrictGrade { 
     First, 
     Second, 
@@ -28,6 +22,13 @@ struct Restriction {
     double val;
 };
 
+namespace {
+
+struct Options {
+    ElementType type = ElementType::Unknown;
+    int elemAmount = 20;
+    bool help = false;
+};
 
 inline void printBold(const std::string& text) {
     std::cout << "\x1B[1m" << text << "\x1B[0m";
@@ -50,6 +51,8 @@ inline void printUsage() {
     printBold("\t-c, --cubic");
     std::cout << "\n\t\tUse cubic equations for elements.\n";
 }
+
+} // namespace
 
 inline std::optional<Options> getOptions(int argc, char* argv[]) {
     Options options;

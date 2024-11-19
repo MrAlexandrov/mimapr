@@ -6,6 +6,8 @@
 
 namespace NGnuplot {
 
+namespace {
+
 class GnuplotPipe {
 public:
     explicit GnuplotPipe(const std::string& command = "gnuplot -persist") {
@@ -49,6 +51,8 @@ public:
 private:
     FILE* pipe;
 };
+
+} // namespace
 
 inline void plot(const std::string& filename, double left, double right) {
     std::ifstream dataFile(filename + ".txt");
