@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -8,15 +9,21 @@
 #include "options.hpp"
 #include "gnuplot.hpp"
 
+
 using namespace NMatrix;
 using namespace NGnuplot;
 using namespace NOptions;
 
 
-void makeLinearSLAU(TMatrix<>& resultMatrix, TMatrix<>& resultVector, double L, double a, double b, double c, double d, int i) {
+void makeLinearSLAU(TMatrix<>& resultMatrix, 
+                    TMatrix<>& resultVector, 
+                    double L, 
+                    double a, double b, double c, double d, 
+                    int i) 
+{
     resultMatrix[i][i]          += -a / L   - b / 2 + c * L / 3;
-    resultMatrix[i][i + 1]      += a / L    + b / 2 + c * L / 6;
-    resultMatrix[i + 1][i]      += a / L    - b / 2 + c * L / 6;
+    resultMatrix[i][i + 1]      +=  a / L   + b / 2 + c * L / 6;
+    resultMatrix[i + 1][i]      +=  a / L   - b / 2 + c * L / 6;
     resultMatrix[i + 1][i + 1]  += -a / L   + b / 2 + c * L / 3;
 
     resultVector[i][0]          += -d * L   / 2;
@@ -27,7 +34,8 @@ void makeCubicSLAU(TMatrix<>& resultMatrix,
                    TMatrix<>& resultVector, 
                    double L, 
                    double a, double b, double c, double d, 
-                   int i) {
+                   int i) 
+{
     resultMatrix[i][i]          += -a *  37 / (10 * L) - b / 2       + c * 8  * L / 105;
     resultMatrix[i][i + 1]      +=  a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[i][i + 2]      += -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140;
@@ -175,10 +183,10 @@ int main(int argc, char* argv[]) {
         }
 
         for (int i = 0; i < size; ++i) {
-            outFile << nodes[i] << '\t'
-                    << displacementsReal[i] << '\t'
-                    << displacements[i][0] << '\t'
-                    << errors[i] << '\n';
+            outFile << std::setw(10) << nodes[i]
+                    << std::setw(10) << displacementsReal[i]
+                    << std::setw(10) << displacements[i][0]
+                    << std::setw(10) << errors[i] << '\n';
         }
         outFile.flush();
         #ifdef PRINT
