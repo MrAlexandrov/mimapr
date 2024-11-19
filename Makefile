@@ -21,17 +21,19 @@ test: build
 	@cd $(BUILD_DIR) && ctest --verbose
 
 run: build
-	@echo "==> Running ${PROJECT_NAME}"
-	@cd ${BUILD_DIR} && ./${PROJECT_NAME}
+	@echo "==> Running ${PROJECT_NAME} with arguments: $(ARGS)"
+	@cd ${BUILD_DIR} && ./${PROJECT_NAME} $(ARGS)
+
+run-all: build
+	@echo "==> Running ${PROJECT_NAME} for 1, 3, 20, 40 elements"
+	@python3 solve.py
 
 clean:
 	@echo "==> Cleaning up..."
-	@rm -rf $(BUILD_DIR)
-
-rebuild: clean build
+	@make -C ${BUILD_DIR} clean
 
 install:
 	sudo apt-get update
 	sudo apt-get install -y cmake clang libgtest-dev
 
-.PHONY: all build test clean rebuild install
+.PHONY: all build test run run-all clean install

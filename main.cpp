@@ -1,5 +1,6 @@
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <cmath>
 #include <fstream>
@@ -112,15 +113,19 @@ double realSolve(double x) {
 	return exp(-x) * C1 + exp(x) * C2 - 10;
 }
 
+namespace {
+
+const double a = 1, b = 0, c = -1, d = -10;
+const Restriction lower = {RestrictGrade::Second, 2, 10};
+const Restriction upper = {RestrictGrade::First, 8, 5};
+
+} // namespace
+
 int main(int argc, char* argv[]) {
     auto opt = getOptions(argc, argv);
     if (!opt.has_value() || opt->help) {
         return 0;
     }
-
-    const double a = 1, b = 0, c = -1, d = -10;
-    Restriction lower = {RestrictGrade::Second, 2, 10};
-    Restriction upper = {RestrictGrade::First, 8, 5};
 
     int size = opt->elemAmount * (opt->type == ElementType::Linear ? 1 : 3) + 1;
     double step = (upper.pos - lower.pos) / opt->elemAmount;
@@ -134,12 +139,11 @@ int main(int argc, char* argv[]) {
             makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
         }
     } else if (opt->type == ElementType::Cubic) {
-        for (int i=0; i < size - 3; i+=3) {
+        for (int i = 0; i < size - 3; i += 3) {
             makeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
         }
     } else {
-        std::cerr << "ElementType::Unknown" << std::endl;
-        return -1;
+        throw std::runtime_error("ElementType::Unknown");
     }
     applyRestrictions(stiffnessMatrix, loadVector, lower, 0, a);
     applyRestrictions(stiffnessMatrix, loadVector, upper, size - 1, a);
