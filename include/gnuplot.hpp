@@ -42,7 +42,7 @@ public:
         if (pipe) {
             fwrite(commands.c_str(), sizeof(char), commands.size(), pipe);
         } else {
-            throw std::runtime_error("Pipe is closed or invalid.");
+            throw std::runtime_error("Pipe is closed or invalid");
         }
     }
 
@@ -53,7 +53,7 @@ private:
 inline void plot(const std::string& filename, double left, double right) {
     std::ifstream dataFile(filename + ".txt");
     if (!dataFile.is_open()) {
-        throw std::runtime_error("Error: Data file '" + filename + ".txt' not found.");
+        throw std::runtime_error("Error: Data file '" + filename + ".txt' not found");
     }
 
     try {

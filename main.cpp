@@ -1,13 +1,12 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-#include <optional>
 #include <fstream>
 #include <cassert>
-#include "matrix.hpp"
-#include "get_options.hpp"
-#include "my_gnuplot.hpp"
 
+#include "matrix.hpp"
+#include "options.hpp"
+#include "gnuplot.hpp"
 
 using namespace NMatrix;
 using namespace NGnuplot;
@@ -186,7 +185,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Results successfully saved to " << filename << ".txt\n";
         #endif // PRINT
         plot(filename, lower.pos, upper.pos);
-
     } catch (const std::exception& e) {
         std::cerr << "An error occurred: " << e.what() << '\n';
     }
