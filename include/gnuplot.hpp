@@ -84,8 +84,8 @@ inline void plot(const std::string& filename, long double left, long double righ
         #ifdef PRINT
         std::cout << "Plot successfully created: " << filename << ".png\n";
         #endif // PRINT
-    } catch (const std::exception& e) {
-        throw std::runtime_error(std::string("Failed to generate plot: ") + e.what());
+    } catch (const std::exception& error) {
+        throw std::runtime_error(std::string("Failed to generate plot: ") + error.what());
     }
 }
 
