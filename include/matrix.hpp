@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <iomanip>
 #include <stdexcept>
 #include <vector>
 #include <iostream>
@@ -87,6 +88,7 @@ public:
     TMatrix operator+(const TMatrix&) const;
     TMatrix operator-(const TMatrix&) const;
     TMatrix operator*(const TMatrix&) const;
+    // TMatrix operator/(const TMatrix&) const;
 
     TMatrix& operator+=(const T&);
     TMatrix& operator-=(const T&);
@@ -348,9 +350,10 @@ bool TMatrix<T>::operator==(const TMatrix<T>& other) const {
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const TMatrix<T>& matrix) {
+    constexpr int width = 10;
 	for (const auto& row : matrix.data_) {
 		for (const auto& elem : row) {
-			out << elem << ' ';
+			out << std::setw(width) << elem;
 		}
 		out << '\n';
 	}
