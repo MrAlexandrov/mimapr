@@ -64,7 +64,7 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     resultVector[index + 3][0]      += -d * L / 8;
 }
 
-void applyRestrictions(TMatrix<long double>& matrix, 
+void applyRestriction(TMatrix<long double>& matrix, 
                        TMatrix<long double>& vector, 
                        const Restriction& restriction, 
                        const int row, const long double coef) {
@@ -93,8 +93,9 @@ void applyRestrictions(TMatrix<long double>& matrix,
 void solveSLAU(TMatrix<long double>& xVector, TMatrix<long double>& aMatrix, TMatrix<long double>& bVector) {
     int size = aMatrix.rows();
     for (int i = 0; i < size - 1; ++i) {
+        long double baseElement = aMatrix[i][i];
         for (int j = i + 1; j < size; ++j) {
-            long double factor = aMatrix[j][i] / aMatrix[i][i];
+            long double factor = aMatrix[j][i] / baseElement;
             for (int k = i; k < size; ++k) {
                 aMatrix[j][k] -= factor * aMatrix[i][k];
             }
@@ -129,7 +130,7 @@ void saveResultsToFile(const std::string& filename,
             throw std::ios_base::failure("Failed to open the output file: " + filename);
         }
         constexpr long double EPS = 1e-12;
-        for (size_t i = 0; i < nodes.size(); ++i) {
+        for (size_t i = 0, end = nodes.size(); i < end; ++i) {
             outFile << std::setw(4) << nodes[i]
                     << std::setw(12) << (-EPS < displacementsReal[i] && displacementsReal[i] < EPS ? 0 : displacementsReal[i])
                     << std::setw(12) << (-EPS < displacements[i][0] && displacements[i][0] < EPS ? 0 : displacements[i][0])
@@ -194,7 +195,7 @@ int main(int argc, char* argv[]) {
     };
 
     for (auto&& current : Restrictions) {
-        applyRestrictions(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
+        applyRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
     }
 
     solveSLAU(displacements, stiffnessMatrix, loadVector);
