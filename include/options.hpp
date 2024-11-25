@@ -4,7 +4,7 @@
 
 namespace NOptions {
 
-enum class ElementType { 
+enum class ElementType : int { 
     Unknown = 0, 
     Linear = 1, 
     Cubic = 3 
@@ -18,8 +18,8 @@ enum class RestrictGrade {
 
 struct Restriction {
     RestrictGrade grade;
-    double pos;
-    double val;
+    long double pos;
+    long double val;
 };
 
 namespace {
@@ -36,7 +36,7 @@ inline void printBold(const std::string& text) {
 
 inline void printUsage() {
     std::cout << "Usage:\n"
-              << "./mke [-l | -c] [-s <SIZE>]\n\n"
+              << "./main [-l | -c] [-s <SIZE>]\n\n"
               << "Options:\n";
 
     printBold("\t-h, --help");

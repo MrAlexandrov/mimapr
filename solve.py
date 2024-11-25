@@ -29,6 +29,8 @@ def run_prog(code_folder):
                 capture_output=True, text=True
             )
 
+            print(result.stdout)
+
             # Проверка на успешное выполнение
             if result.returncode != 0:
                 raise RuntimeError(f"Ошибка выполнения {program_path} с параметрами -{ke_type} -s {size}")

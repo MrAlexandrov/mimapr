@@ -71,7 +71,7 @@ public:
     constexpr TMatrix& operator=(TMatrix&&) = default;
 
     constexpr TMatrix(const std::vector<ProxyRow>& data) : data_(data) {}
-    TMatrix(std::initializer_list<std::initializer_list<T>> list);
+    constexpr TMatrix(std::initializer_list<std::initializer_list<T>> list);
     
     const size_t rows() const noexcept;
     const size_t cols() const noexcept;
@@ -159,7 +159,7 @@ const T& TMatrix<T>::ProxyRow::operator[](size_t col) const {
 
 
 template <typename T>
-TMatrix<T>::TMatrix(std::initializer_list<std::initializer_list<T>> list) {
+constexpr TMatrix<T>::TMatrix(std::initializer_list<std::initializer_list<T>> list) {
     size_t rows_ = list.size();
     size_t cols_ = list.begin()->size();
 
