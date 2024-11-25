@@ -64,29 +64,29 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     resultVector[index + 3][0]      += -d * L / 8;
 }
 
-void applyTRestriction(TMatrix<long double>& matrix, 
+void applyRestriction(TMatrix<long double>& matrix, 
                        TMatrix<long double>& vector, 
-                       const TRestriction& TRestriction, 
+                       const TRestriction& restriction, 
                        const int row, const long double coef) {
-    switch (TRestriction.grade) {
-        case ETRestrictionGrade::First: {
+    switch (restriction.grade) {
+        case ERestrictionGrade::First: {
             for (int col = 0, end = matrix.cols(); col < end; ++col) {
                 matrix[row][col] = 0;
             }
             matrix[row][row] = 1;
-            vector[row][0] = TRestriction.value;
+            vector[row][0] = restriction.value;
             break;
         }
-        case ETRestrictionGrade::Second: {
-            vector[row][0] += coef * (row == 0 ? TRestriction.value : (row == matrix.rows() - 1 ? -TRestriction.value : TRestriction.value));
+        case ERestrictionGrade::Second: {
+            vector[row][0] += coef * (row == 0 ? restriction.value : (row == matrix.rows() - 1 ? -restriction.value : restriction.value));
             break;
         }
-        case ETRestrictionGrade::Third: {
-            matrix[row][row] += coef * TRestriction.value;
+        case ERestrictionGrade::Third: {
+            matrix[row][row] += coef * restriction.value;
             break;
         }
         default:
-            throw std::invalid_argument("Unknown TRestriction grade.");
+            throw std::invalid_argument("Unknown restriction grade.");
     }
 }
 
@@ -152,16 +152,16 @@ int main(int argc, char* argv[]) {
     }
 
     constexpr long double a = 1, b = 0, c = -1, d = -10;
-    constexpr TRestriction lower = {ETRestrictionGrade::Second, 2, 10};
-    constexpr TRestriction upper = {ETRestrictionGrade::First, 8, 5};
+    constexpr TRestriction lower = {ERestrictionGrade::Second, 2, 10};
+    constexpr TRestriction upper = {ERestrictionGrade::First, 8, 5};
 
-    std::vector<TRestriction> TRestrictions = {
+    std::vector<TRestriction> Restrictions = {
         lower,
         upper,
     };
 
-    int minimum = (*min_element(TRestrictions.begin(), TRestrictions.end())).position;
-    int maximum = (*max_element(TRestrictions.begin(), TRestrictions.end())).position;
+    int minimum = (*std::min_element(Restrictions.begin(), Restrictions.end())).position;
+    int maximum = (*std::max_element(Restrictions.begin(), Restrictions.end())).position;
 
     int size = opt->elementsAmount * (opt->type == EElementType::Linear ? 1 : 3) + 1;
     long double step = static_cast<long double>(maximum - minimum) / opt->elementsAmount;
@@ -194,8 +194,8 @@ int main(int argc, char* argv[]) {
         return row;
     };
 
-    for (auto&& current : TRestrictions) {
-        applyTRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
+    for (auto&& current : Restrictions) {
+        applyRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
     }
 
     solveSLAU(displacements, stiffnessMatrix, loadVector);

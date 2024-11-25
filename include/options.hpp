@@ -10,14 +10,14 @@ enum class EElementType : int {
     Cubic = 3 
 };
 
-enum class ETRestrictionGrade { 
+enum class ERestrictionGrade { 
     First, 
     Second, 
     Third 
 };
 
 struct TRestriction {
-    ETRestrictionGrade grade;
+    ERestrictionGrade grade;
     long double position;
     long double value;
 
