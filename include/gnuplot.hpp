@@ -8,22 +8,22 @@ namespace NGnuplot {
 
 namespace {
 
-class GnuplotPipe {
+class TGnuplotPipe {
 public:
-    explicit GnuplotPipe(const std::string& command = "gnuplot -persist") 
+    explicit TGnuplotPipe(const std::string& command = "gnuplot -persist") 
         : pipe(popen(command.c_str(), "w")) {
         if (!pipe) {
             throw std::runtime_error("Failed to open Gnuplot process.");
         }
     }
 
-    GnuplotPipe(const GnuplotPipe&) = delete;
-    GnuplotPipe& operator=(const GnuplotPipe&) = delete;
+    TGnuplotPipe(const TGnuplotPipe&) = delete;
+    TGnuplotPipe& operator=(const TGnuplotPipe&) = delete;
 
-    GnuplotPipe(GnuplotPipe&& other) noexcept : pipe(other.pipe) {
+    TGnuplotPipe(TGnuplotPipe&& other) noexcept : pipe(other.pipe) {
         other.pipe = nullptr;
     }
-    GnuplotPipe& operator=(GnuplotPipe&& other) noexcept {
+    TGnuplotPipe& operator=(TGnuplotPipe&& other) noexcept {
         if (this != &other) {
             if (pipe) {
                 pclose(pipe);
@@ -34,7 +34,7 @@ public:
         return *this;
     }
 
-    ~GnuplotPipe() {
+    ~TGnuplotPipe() {
         if (pipe) {
             pclose(pipe);
         }
@@ -79,7 +79,7 @@ inline void plot(const std::string& filename, long double left, long double righ
     try {
         const std::string commands = generateGnuplotCommands(filename, left, right);
 
-        GnuplotPipe gnuplot;
+        TGnuplotPipe gnuplot;
         gnuplot.write(commands);
         #ifdef PRINT
         std::cout << "Plot successfully created: " << filename << ".png\n";

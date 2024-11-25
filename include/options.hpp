@@ -4,32 +4,32 @@
 
 namespace NOptions {
 
-enum class ElementType : int { 
+enum class EElementType : int { 
     Unknown = 0, 
     Linear = 1, 
     Cubic = 3 
 };
 
-enum class RestrictionGrade { 
+enum class ETRestrictionGrade { 
     First, 
     Second, 
     Third 
 };
 
-struct Restriction {
-    RestrictionGrade grade;
+struct TRestriction {
+    ETRestrictionGrade grade;
     long double position;
     long double value;
 
-    bool operator<(const Restriction& other) const {
+    bool operator<(const TRestriction& other) const {
         return position < other.position;
     }
 };
 
 namespace {
 
-struct Options {
-    ElementType type = ElementType::Unknown;
+struct TOptions {
+    EElementType type = EElementType::Unknown;
     int elementsAmount = 20;
     bool help = false;
 };
@@ -58,8 +58,8 @@ inline void printUsage() {
 
 } // namespace
 
-inline std::optional<Options> getOptions(int argc, char* argv[]) {
-    Options options;
+inline std::optional<TOptions> getOptions(int argc, char* argv[]) {
+    TOptions options;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -69,9 +69,9 @@ inline std::optional<Options> getOptions(int argc, char* argv[]) {
             options.help = true;
             return options;
         } else if (arg == "-l" || arg == "--linear") {
-            options.type = ElementType::Linear;
+            options.type = EElementType::Linear;
         } else if (arg == "-c" || arg == "--cubic") {
-            options.type = ElementType::Cubic;
+            options.type = EElementType::Cubic;
         } else if (arg == "-s" || arg == "--size") {
             if (i + 1 < argc) {
                 options.elementsAmount = std::stoi(argv[++i]);
@@ -85,11 +85,11 @@ inline std::optional<Options> getOptions(int argc, char* argv[]) {
         }
     }
 
-    if (options.type == ElementType::Unknown) {
+    if (options.type == EElementType::Unknown) {
         #ifdef PRINT
         std::cout << "Element type not specified. Using default: Linear.\n";
         #endif // PRINT
-        options.type = ElementType::Linear;
+        options.type = EElementType::Linear;
     }
 
     return options;
