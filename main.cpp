@@ -10,11 +10,11 @@
 #include "options.hpp"
 #include "gnuplot.hpp"
 
+namespace {
 
 using namespace NMatrix;
 using namespace NGnuplot;
 using namespace NOptions;
-
 
 void makeLinearSLAU(TMatrix<>& resultMatrix, 
                     TMatrix<>& resultVector, 
@@ -113,12 +113,6 @@ double realSolve(double x) {
 	return exp(-x) * C1 + exp(x) * C2 - 10;
 }
 
-namespace {
-
-const double a = 1, b = 0, c = -1, d = -10;
-const Restriction lower = {RestrictGrade::Second, 2, 10};
-const Restriction upper = {RestrictGrade::First, 8, 5};
-
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -126,6 +120,10 @@ int main(int argc, char* argv[]) {
     if (!opt.has_value() || opt->help) {
         return 0;
     }
+
+    const double a = 1, b = 0, c = -1, d = -10;
+    const Restriction lower = {RestrictGrade::Second, 2, 10};
+    const Restriction upper = {RestrictGrade::First, 8, 5};
 
     int size = opt->elemAmount * (opt->type == ElementType::Linear ? 1 : 3) + 1;
     double step = (upper.pos - lower.pos) / opt->elemAmount;
