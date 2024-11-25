@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
@@ -69,7 +70,7 @@ void applyRestrictions(TMatrix<long double>& matrix,
                        const int row, const long double coef) {
     switch (restriction.grade) {
         case RestrictGrade::First: {
-            for (int col = 0; col < matrix.cols(); ++col) {
+            for (int col = 0, end = matrix.cols(); col < end; ++col) {
                 matrix[row][col] = 0;
             }
             matrix[row][row] = 1;
@@ -77,7 +78,7 @@ void applyRestrictions(TMatrix<long double>& matrix,
             break;
         }
         case RestrictGrade::Second: {
-            vector[row][0] += coef * (row == 0 ? restriction.val : (row == matrix.rows() - 1 ? -restriction.val : 0));
+            vector[row][0] += coef * (row == 0 ? restriction.val : (row == matrix.rows() - 1 ? -restriction.val : restriction.val));
             break;
         }
         case RestrictGrade::Third: {
@@ -153,8 +154,16 @@ int main(int argc, char* argv[]) {
     constexpr Restriction lower = {RestrictGrade::Second, 2, 10};
     constexpr Restriction upper = {RestrictGrade::First, 8, 5};
 
+    std::vector<Restriction> Restrictions = {
+        lower,
+        upper,
+    };
+
+    int minimum = (*min_element(Restrictions.begin(), Restrictions.end())).pos;
+    int maximum = (*max_element(Restrictions.begin(), Restrictions.end())).pos;
+
     int size = opt->elemAmount * (opt->type == ElementType::Linear ? 1 : 3) + 1;
-    long double step = static_cast<long double>(upper.pos - lower.pos) / opt->elemAmount;
+    long double step = static_cast<long double>(maximum - minimum) / opt->elemAmount;
 
     TMatrix<long double> stiffnessMatrix(size, size, 0.0);
     TMatrix<long double> loadVector(size, 1, 0.0);
@@ -171,8 +180,23 @@ int main(int argc, char* argv[]) {
     } else {
         throw std::runtime_error("ElementType::Unknown");
     }
-    applyRestrictions(stiffnessMatrix, loadVector, lower, 0, a);
-    applyRestrictions(stiffnessMatrix, loadVector, upper, size - 1, a);
+
+    auto getRowByPosition = [&](int position) -> int {
+        assert(minimum <= position && position <= maximum);
+        int value = position - minimum;
+        if (opt->type == ElementType::Cubic) {
+            value = value * 3;
+        }
+        int row = std::round(value / step);
+        row = std::max(0, row);
+        row = std::min(size - 1, row);
+        return row;
+    };
+
+    for (auto&& current : Restrictions) {
+        applyRestrictions(stiffnessMatrix, loadVector, current, getRowByPosition(current.pos), a);
+    }
+
     solveSLAU(displacements, stiffnessMatrix, loadVector);
     
     #ifdef PRINT

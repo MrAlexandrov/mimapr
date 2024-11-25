@@ -20,6 +20,10 @@ struct Restriction {
     RestrictGrade grade;
     long double pos;
     long double val;
+
+    bool operator<(const Restriction& other) const {
+        return pos < other.pos;
+    }
 };
 
 namespace {
