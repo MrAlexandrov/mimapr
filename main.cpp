@@ -85,8 +85,9 @@ void applyRestriction(TMatrix<long double>& matrix,
             matrix[row][row] += coef * restriction.value;
             break;
         }
-        default:
+        default: {
             throw std::invalid_argument("Unknown restriction grade.");
+        }
     }
 }
 
@@ -183,8 +184,8 @@ int main(int argc, char* argv[]) {
             }
             break;
         }
-        case NOptions::EElementType::Unknown: {
-            throw std::runtime_error("EElementType::Unknown");
+        default: {
+            throw std::runtime_error("Unknown element type");
         }
     }
 

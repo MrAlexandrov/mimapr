@@ -4,8 +4,7 @@
 
 namespace NOptions {
 
-enum class EElementType : int { 
-    Unknown = 0, 
+enum class EElementType : int {
     Linear = 1, 
     Cubic = 3 
 };
@@ -29,7 +28,7 @@ struct TRestriction {
 namespace {
 
 struct TOptions {
-    EElementType type = EElementType::Unknown;
+    EElementType type = EElementType::Linear;
     int elementsAmount = 20;
     bool help = false;
 };
@@ -83,13 +82,6 @@ inline std::optional<TOptions> getOptions(int argc, char* argv[]) {
             std::cerr << "Unknown option: " << arg << "\n";
             return std::nullopt;
         }
-    }
-
-    if (options.type == EElementType::Unknown) {
-        #ifdef PRINT
-        std::cout << "Element type not specified. Using default: Linear.\n";
-        #endif // PRINT
-        options.type = EElementType::Linear;
     }
 
     return options;
