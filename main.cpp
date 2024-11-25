@@ -22,27 +22,11 @@ void makeLinearSLAU(TMatrix<long double>& resultMatrix,
                     const long double a, const long double b, const long double c, const long double d, 
                     const int index) 
 {
-    // TMatrix<long double> add = {
-    //     {-a / L - b / 2 + c * L / 3,  a / L + b / 2 + c * L / 6}, 
-    //     { a / L - b / 2 + c * L / 6, -a / L + b / 2 + c * L / 3}
-    // };
-    // for (int i = index; i < index + 2; ++i) {
-    //     for (int j = index; j < index + 2; ++j) {
-    //         resultMatrix[i][j] += add[i - index][j - index];
-    //     }
-    // }
     resultMatrix[index][index]          += -a / L   - b / 2 + c * L / 3;
     resultMatrix[index][index + 1]      +=  a / L   + b / 2 + c * L / 6;
     resultMatrix[index + 1][index]      +=  a / L   - b / 2 + c * L / 6;
     resultMatrix[index + 1][index + 1]  += -a / L   + b / 2 + c * L / 3;
 
-    // TMatrix<long double> addVector = {
-    //     {-d * L / 2},
-    //     {-d * L / 2}
-    // };
-    // for (int i = index; i < index + 2; ++i) {
-    //     resultVector[i][0] += addVector[i - index][0];
-    // }
     resultVector[index][0]          += -d * L   / 2;
     resultVector[index + 1][0]      += -d * L   / 2;
 }
@@ -52,31 +36,7 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
                    const long double L, 
                    const long double a, const long double b, const long double c, const long double d, 
                    const int index) 
-{
-    // TMatrix<long double> addMatrix = { 
-    // {   -a *  37 / (10 * L) - b / 2       + c * 8  * L / 105,
-    //          a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560,
-    //         -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140,
-    //          a *  13 / (40 * L) + b * 7  / 80 + c * 19 * L / 1680   },
-    // {    a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560,
-    //         -a *  54 / ( 5 * L)               + c * 27 * L / 70,
-    //          a * 297 / (40 * L) + b * 81 / 80 - c * 27 * L / 560,
-    //         -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140    },
-    // {   -a *  27 / (20 * L) + b * 3  / 10 - c * 3  * L / 140,
-    //          a * 297 / (40 * L) - b * 81 / 80 - c * 27 * L / 560,
-    //         -a *  54 / ( 5 * L)               + c * 27 * L / 70,
-    //          a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560    },
-    // {    a *  13 / (40 * L) - b * 7  / 80 + c * 19 * L / 1680,
-    //         -a *  27 / (20 * L) + b * 3  / 10 - c * 3  * L / 140,
-    //          a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560,
-    //         -a *  37 / (10 * L) + b / 2       + c * 8  * L / 105    }
-    // };
-    // for (int i = index; i < index + 4; ++i) {
-    //     for (int j = index; j < index + 4; ++j) {
-    //         resultMatrix[i][j] += addMatrix[i - index][j - index];
-    //     }
-    // }
-    
+{   
     resultMatrix[index][index]          += -a *  37 / (10 * L) - b / 2       + c * 8  * L / 105;
     resultMatrix[index][index + 1]      +=  a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[index][index + 2]      += -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140;
@@ -96,16 +56,6 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     resultMatrix[index + 3][index + 1]  += -a *  27 / (20 * L) + b * 3  / 10 - c * 3  * L / 140;
     resultMatrix[index + 3][index + 2]  +=  a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[index + 3][index + 3]  += -a *  37 / (10 * L) + b / 2       + c * 8  * L / 105;
-
-    // TMatrix<long double> addVector = {
-    //     {-d * L / 8},
-    //     {-d * L / 8},
-    //     {-d * 3 * L / 8},
-    //     {-d * L / 8}
-    // };
-    // for (int i = index; i < index + 4; ++i) {
-    //     resultVector[i][0] += addVector[i - index][0];
-    // }
 
     resultVector[index][0]          += -d * L / 8;
     resultVector[index + 1][0]      += -d * 3 * L / 8;
@@ -164,6 +114,31 @@ long double realSolve(const long double x) {
 	long double C1 = -(5 * expl(8) * (-3 + 2 * expl(6))) / (1 + expl(12));
 	long double C2 = 5 * (2 + 3 * expl(6)) / (expl(2) * (1 + expl(12)));
 	return expl(-x) * C1 + expl(x) * C2 - 10;
+}
+
+void saveResultsToFile(const std::string& filename, 
+                       const std::vector<long double>& nodes,
+                       const std::vector<long double>& displacementsReal,
+                       const TMatrix<long double>&     displacements,
+                       const std::vector<long double>& errors) 
+{
+    try {
+        std::ofstream outFile(filename);
+        if (!outFile.is_open()) {
+            throw std::ios_base::failure("Failed to open the output file: " + filename);
+        }
+        constexpr long double EPS = 1e-12;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            outFile << std::setw(4) << nodes[i]
+                    << std::setw(12) << (-EPS < displacementsReal[i] && displacementsReal[i] < EPS ? 0 : displacementsReal[i])
+                    << std::setw(12) << (-EPS < displacements[i][0] && displacements[i][0] < EPS ? 0 : displacements[i][0])
+                    << std::setw(12) << (-EPS < errors[i] && errors[i] < EPS ? 0 : errors[i]) << '\n';
+        }
+        outFile.close();
+        std::cout << "Results successfully saved to " << filename << "\n";
+    } catch (const std::exception& error) {
+        std::cerr << "An error occurred while saving results: " << error.what() << "\n";
+    }
 }
 
 } // namespace
@@ -227,30 +202,14 @@ int main(int argc, char* argv[]) {
     // #ifdef PRINT
     std::cout << "\nMax error: " << maxError << "\n";
     // #endif // PRINT
-    try {
-        std::string filename = (opt->type == ElementType::Linear ? "linear" : "cubic") 
-                       + std::string("_") 
-                       + std::to_string(opt->elemAmount);
 
-        std::ofstream outFile(filename + ".txt");
-        if (!outFile.is_open()) {
-            throw std::ios_base::failure("Failed to open the output file: " + filename + ".txt");
-        }
-        constexpr long double EPS = 1e-12;
-        for (int i = 0; i < size; ++i) {
-            outFile << std::setw(4)  << nodes[i]
-                    << std::setw(12) << (-EPS < displacementsReal[i] && displacementsReal[i] < EPS ? 0 : displacementsReal[i])
-                    << std::setw(12) << (-EPS < displacements[i][0] && displacements[i][0] < EPS ? 0 : displacements[i][0])
-                    << std::setw(12) << (-EPS < errors[i] && errors[i] < EPS ? 0 : errors[i]) << '\n';
-        }
-        outFile.flush();
-        #ifdef PRINT
-        std::cout << "Results successfully saved to " << filename << ".txt\n";
-        #endif // PRINT
-        plot(filename, lower.pos, upper.pos);
-    } catch (const std::exception& e) {
-        std::cerr << "An error occurred: " << e.what() << '\n';
-    }
+    std::string filename = (opt->type == ElementType::Linear ? "linear" : "cubic") 
+                    + std::string("_") 
+                    + std::to_string(opt->elemAmount)
+                    + std::string(".txt");
+
+    saveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
+    plot(filename, lower.pos, upper.pos);
 
     return 0;
 }

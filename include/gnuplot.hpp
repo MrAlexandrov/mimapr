@@ -62,18 +62,18 @@ inline std::string generateGnuplotCommands(const std::string& filename, long dou
     commands << "set xlabel 'Node Position'\n";
     commands << "set ylabel 'Values'\n";
     commands << "set xrange [" << left << ":" << right << "]\n";
-    commands << "plot '" << filename << ".txt' using 1:2 with lines title 'Real', "
-             << "'" << filename << ".txt' using 1:3 with lines title 'Computed', "
-             << "'" << filename << ".txt' using 1:4 with lines title 'Error'\n";
+    commands << "plot '" << filename << "' using 1:2 with lines title 'Real', "
+             << "'" << filename << "' using 1:3 with lines title 'Computed', "
+             << "'" << filename << "' using 1:4 with lines title 'Error'\n";
     return commands.str();
 }
 
 } // namespace
 
 inline void plot(const std::string& filename, long double left, long double right) {
-    std::ifstream dataFile(filename + ".txt");
+    std::ifstream dataFile(filename);
     if (!dataFile.is_open()) {
-        throw std::runtime_error("Error: Data file '" + filename + ".txt' not found");
+        throw std::runtime_error("Error: Data file '" + filename + "' not found");
     }
 
     try {
