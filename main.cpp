@@ -170,16 +170,22 @@ int main(int argc, char* argv[]) {
     TMatrix<long double> loadVector(size, 1, 0.0);
     TMatrix<long double> displacements(size, 1, 0.0);
 
-    if (opt->type == EElementType::Linear) {
-        for (int i = 0; i < size - 1; ++i) {
-            makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+    switch (opt->type) {
+        case NOptions::EElementType::Linear: {
+            for (int i = 0; i < size - 1; ++i) {
+                makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+            }
+            break;
         }
-    } else if (opt->type == EElementType::Cubic) {
-        for (int i = 0; i < size - 3; i += 3) {
-            makeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+        case NOptions::EElementType::Cubic: {
+            for (int i = 0; i < size - 3; i += 3) {
+                makeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+            }
+            break;
         }
-    } else {
-        throw std::runtime_error("EElementType::Unknown");
+        case NOptions::EElementType::Unknown: {
+            throw std::runtime_error("EElementType::Unknown");
+        }
     }
 
     auto getRowByPosition = [&](long double position) -> int {
