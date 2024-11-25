@@ -10,19 +10,19 @@ enum class ElementType : int {
     Cubic = 3 
 };
 
-enum class RestrictGrade { 
+enum class RestrictionGrade { 
     First, 
     Second, 
     Third 
 };
 
 struct Restriction {
-    RestrictGrade grade;
-    long double pos;
-    long double val;
+    RestrictionGrade grade;
+    long double position;
+    long double value;
 
     bool operator<(const Restriction& other) const {
-        return pos < other.pos;
+        return position < other.position;
     }
 };
 
@@ -30,7 +30,7 @@ namespace {
 
 struct Options {
     ElementType type = ElementType::Unknown;
-    int elemAmount = 20;
+    int elementsAmount = 20;
     bool help = false;
 };
 
@@ -74,7 +74,7 @@ inline std::optional<Options> getOptions(int argc, char* argv[]) {
             options.type = ElementType::Cubic;
         } else if (arg == "-s" || arg == "--size") {
             if (i + 1 < argc) {
-                options.elemAmount = std::stoi(argv[++i]);
+                options.elementsAmount = std::stoi(argv[++i]);
             } else {
                 std::cerr << "Missing value for option -s.\n";
                 return std::nullopt;

@@ -69,20 +69,20 @@ void applyRestrictions(TMatrix<long double>& matrix,
                        const Restriction& restriction, 
                        const int row, const long double coef) {
     switch (restriction.grade) {
-        case RestrictGrade::First: {
+        case RestrictionGrade::First: {
             for (int col = 0, end = matrix.cols(); col < end; ++col) {
                 matrix[row][col] = 0;
             }
             matrix[row][row] = 1;
-            vector[row][0] = restriction.val;
+            vector[row][0] = restriction.value;
             break;
         }
-        case RestrictGrade::Second: {
-            vector[row][0] += coef * (row == 0 ? restriction.val : (row == matrix.rows() - 1 ? -restriction.val : restriction.val));
+        case RestrictionGrade::Second: {
+            vector[row][0] += coef * (row == 0 ? restriction.value : (row == matrix.rows() - 1 ? -restriction.value : restriction.value));
             break;
         }
-        case RestrictGrade::Third: {
-            matrix[row][row] += coef * restriction.val;
+        case RestrictionGrade::Third: {
+            matrix[row][row] += coef * restriction.value;
             break;
         }
         default:
@@ -151,19 +151,19 @@ int main(int argc, char* argv[]) {
     }
 
     constexpr long double a = 1, b = 0, c = -1, d = -10;
-    constexpr Restriction lower = {RestrictGrade::Second, 2, 10};
-    constexpr Restriction upper = {RestrictGrade::First, 8, 5};
+    constexpr Restriction lower = {RestrictionGrade::Second, 2, 10};
+    constexpr Restriction upper = {RestrictionGrade::First, 8, 5};
 
     std::vector<Restriction> Restrictions = {
         lower,
         upper,
     };
 
-    int minimum = (*min_element(Restrictions.begin(), Restrictions.end())).pos;
-    int maximum = (*max_element(Restrictions.begin(), Restrictions.end())).pos;
+    int minimum = (*min_element(Restrictions.begin(), Restrictions.end())).position;
+    int maximum = (*max_element(Restrictions.begin(), Restrictions.end())).position;
 
-    int size = opt->elemAmount * (opt->type == ElementType::Linear ? 1 : 3) + 1;
-    long double step = static_cast<long double>(maximum - minimum) / opt->elemAmount;
+    int size = opt->elementsAmount * (opt->type == ElementType::Linear ? 1 : 3) + 1;
+    long double step = static_cast<long double>(maximum - minimum) / opt->elementsAmount;
 
     TMatrix<long double> stiffnessMatrix(size, size, 0.0);
     TMatrix<long double> loadVector(size, 1, 0.0);
@@ -181,20 +181,20 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("ElementType::Unknown");
     }
 
-    auto getRowByPosition = [&](int position) -> int {
+    auto getRowByPosition = [&](long double position) -> int {
         assert(minimum <= position && position <= maximum);
-        int value = position - minimum;
+        long double shift = position - minimum;
         if (opt->type == ElementType::Cubic) {
-            value = value * 3;
+            shift *= 3;
         }
-        int row = std::round(value / step);
+        int row = std::round(shift / step);
         row = std::max(0, row);
         row = std::min(size - 1, row);
         return row;
     };
 
     for (auto&& current : Restrictions) {
-        applyRestrictions(stiffnessMatrix, loadVector, current, getRowByPosition(current.pos), a);
+        applyRestrictions(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
     }
 
     solveSLAU(displacements, stiffnessMatrix, loadVector);
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
     std::vector<long double> errors(size);
     std::vector<long double> displacementsReal(size);
 
-    long double nodePosition = lower.pos;
+    long double nodePosition = lower.position;
     for (int i = 0; i < size; ++i) {
         long double realValue = realSolve(nodePosition);
         long double error = std::fabs(displacements[i][0] - realValue);
@@ -229,11 +229,11 @@ int main(int argc, char* argv[]) {
 
     std::string filename = (opt->type == ElementType::Linear ? "linear" : "cubic") 
                     + std::string("_") 
-                    + std::to_string(opt->elemAmount)
+                    + std::to_string(opt->elementsAmount)
                     + std::string(".txt");
 
     saveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
-    plot(filename, lower.pos, upper.pos);
+    plot(filename, lower.position, upper.position);
 
     return 0;
 }
