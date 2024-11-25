@@ -218,7 +218,7 @@ int main(int argc, char* argv[]) {
     std::vector<long double> errors(size);
     std::vector<long double> displacementsReal(size);
 
-    long double nodePosition = lower.position;
+    long double nodePosition = minimum;
     for (int i = 0; i < size; ++i) {
         long double realValue = realSolve(nodePosition);
         long double error = std::fabs(displacements[i][0] - realValue);
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
                     + std::string(".txt");
 
     saveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
-    plot(filename, lower.position, upper.position);
+    plot(filename, minimum, maximum);
 
     return 0;
 }
