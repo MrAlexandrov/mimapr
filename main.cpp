@@ -35,14 +35,7 @@ void makeLinearSLAU(TMatrix<long double>& resultMatrix,
     resultMatrix[index][index + 1]      +=  a / L   + b / 2 + c * L / 6;
     resultMatrix[index + 1][index]      +=  a / L   - b / 2 + c * L / 6;
     resultMatrix[index + 1][index + 1]  += -a / L   + b / 2 + c * L / 3;
-
-    // TMatrix<long double> addVector = {
-    //     {-d * L / 2},
-    //     {-d * L / 2}
-    // };
-    // for (int i = index; i < index + 2; ++i) {
-    //     resultVector[i][0] += addVector[i - index][0];
-    // }
+    
     resultVector[index][0]          += -d * L   / 2;
     resultVector[index + 1][0]      += -d * L   / 2;
 }
@@ -76,7 +69,38 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     //         resultMatrix[i][j] += addMatrix[i - index][j - index];
     //     }
     // }
+
     
+    // TMatrix<> aCoef = {
+    //     {   -37.0   /   10.0,   189.0   /   40.0,   27.0    /   20.0,   13.0    /   40.0},
+    //     {   189.0   /   40.0,   -54.0   /   5.0,    297.0   /   40.0,   -27.0   /   20.0},
+    //     {   -27.0   /   20.0,   297.0   /   40.0,   -54.0   /   5.0,    189.0   /   40.0},
+    //     {   13.0    /   40.0,   -27.0   /   20.0,   189.0   /   40.0,   -37.0   /   10.0}
+    // };
+
+    // TMatrix<> bCoef = {
+    //     {   -1.0    /   2.0,    57.0    /   80.0,   -3.0    /   10.0,   7.0     /   80.0},
+    //     {   -57.0   /   80.0,   0.0             ,   81.0    /   80.0,   -3.0    /   10.0},
+    //     {   3.0     /   10.0,   -81.0   /   80.0,   0.0             ,   57.0    /   80.0},
+    //     {   -7.0    /   80.0,   3.0     /   10.0,   -57.0   /   80.0,   1.0     /   2.0}
+    // };
+
+    // TMatrix<> cCoef = {
+    //     {   8.0     /   105.0,  33.0    /   560.0,  -3.0    /   140.0,  19.0    /   1680.0},
+    //     {   33.0    /   27.0,   -27.0   /   560.0,  -3.0    /   140.0,  -3.0    /   140.0},
+    //     {   -3.0    /   140.0,  -27.0   /   560.0,  27.0    /   70.0,   33.0    /   560.0},
+    //     {   19.0    /   1680.0, -3.0    /   140.0,  33.0    /   560.0,  8.0     /   105.0}
+    // };
+
+    // for (int i = 0; i < 4; ++i) {
+    //     for (int j = 0; j < 4; ++j) {
+    //         resultMatrix[index + i][index + j] += 
+    //             a * aCoef[i][j] * L + 
+    //             b * bCoef[i][j]     +
+    //             c * cCoef[i][j] * L;
+    //     }
+    // }
+
     resultMatrix[index][index]          += -a *  37 / (10 * L) - b / 2       + c * 8  * L / 105;
     resultMatrix[index][index + 1]      +=  a * 189 / (40 * L) + b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[index][index + 2]      += -a *  27 / (20 * L) - b * 3  / 10 - c * 3  * L / 140;
@@ -96,16 +120,6 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     resultMatrix[index + 3][index + 1]  += -a *  27 / (20 * L) + b * 3  / 10 - c * 3  * L / 140;
     resultMatrix[index + 3][index + 2]  +=  a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[index + 3][index + 3]  += -a *  37 / (10 * L) + b / 2       + c * 8  * L / 105;
-
-    // TMatrix<long double> addVector = {
-    //     {-d * L / 8},
-    //     {-d * L / 8},
-    //     {-d * 3 * L / 8},
-    //     {-d * L / 8}
-    // };
-    // for (int i = index; i < index + 4; ++i) {
-    //     resultVector[i][0] += addVector[i - index][0];
-    // }
 
     resultVector[index][0]          += -d * L / 8;
     resultVector[index + 1][0]      += -d * 3 * L / 8;
