@@ -10,6 +10,7 @@
 #include "initialize.hpp"
 #include "matrix.hpp"
 #include "gnuplot.hpp"
+#include "options.hpp"
 
 namespace {
 
@@ -17,10 +18,10 @@ using namespace NMatrix;
 using namespace NGnuplot;
 using namespace NOptions;
 
-void MakeLinearSLAU(TMatrix<>& resultMatrix, 
-                    TMatrix<>& resultVector, 
-                    const long double L,
-                    const int index)
+void MakeLinearSLAU(TMatrix<>&          resultMatrix, 
+                    TMatrix<>&          resultVector, 
+                    const long double   L,
+                    const int           index)
 {
     resultMatrix[index][index]          += -A / L   - B / 2 + C * L / 3;
     resultMatrix[index][index + 1]      +=  A / L   + B / 2 + C * L / 6;
@@ -31,10 +32,10 @@ void MakeLinearSLAU(TMatrix<>& resultMatrix,
     resultVector[index + 1][0]          += -D * L   / 2;
 }
 
-void MakeCubicSLAU(TMatrix<>& resultMatrix, 
-                   TMatrix<>& resultVector, 
-                   const long double L,
-                   const int index) 
+void MakeCubicSLAU(TMatrix<>&           resultMatrix, 
+                   TMatrix<>&           resultVector, 
+                   const long double    L,
+                   const int            index) 
 {   
     resultMatrix[index][index]          += -A *  37 / (10 * L) - B / 2       + C * 8  * L / 105;
     resultMatrix[index][index + 1]      +=  A * 189 / (40 * L) + B * 57 / 80 + C * 33 * L / 560;
@@ -62,11 +63,11 @@ void MakeCubicSLAU(TMatrix<>& resultMatrix,
     resultVector[index + 3][0]          += -D * L / 8;
 }
 
-void InitializeSLAU(TMatrix<>& stiffnessMatrix,
-                    TMatrix<>& loadVector,
-                    const EElementType& type,
-                    const int size,
-                    const long double step) 
+void InitializeSLAU(TMatrix<>&              stiffnessMatrix,
+                    TMatrix<>&              loadVector,
+                    const EElementType&     type,
+                    const int               size,
+                    const long double       step) 
 {
     switch (type) {
         case NOptions::EElementType::LINEAR: {
@@ -87,11 +88,11 @@ void InitializeSLAU(TMatrix<>& stiffnessMatrix,
     }
 }
 
-void ApplyRestriction(TMatrix<>& matrix, 
-                      TMatrix<>& vector, 
-                      const TRestriction& restriction, 
-                      const int row, 
-                      const long double coef) 
+void ApplyRestriction(TMatrix<>&            matrix, 
+                      TMatrix<>&            vector, 
+                      const TRestriction&   restriction, 
+                      const int             row, 
+                      const long double     coef) 
 {
     switch (restriction.Grade) {
         case ERestrictionGrade::FIRST: {
@@ -144,13 +145,13 @@ inline long double RealSolve(const long double x) {
 	return expl(-x) * C1 + expl(x) * C2 - 10;
 }
 
-long double CountError(std::vector<long double>& nodes, 
-                       std::vector<long double>& displacementsReal, 
-                       TMatrix<>& displacements,
-                       std::vector<long double>& errors,
-                       const long double minimum,
-                       const long double size,
-                       const long double add
+long double CountError(std::vector<long double>&    nodes, 
+                       std::vector<long double>&    displacementsReal, 
+                       TMatrix<>&                   displacements,
+                       std::vector<long double>&    errors,
+                       const long double            minimum,
+                       const long double            size,
+                       const long double            add
                        ) 
 {
     long double result = 0;
@@ -169,11 +170,11 @@ long double CountError(std::vector<long double>& nodes,
     return result;
 }
 
-void SaveResultsToFile(const std::string& filename, 
-                       const std::vector<long double>& nodes,
-                       const std::vector<long double>& displacementsReal,
-                       const TMatrix<>&     displacements,
-                       const std::vector<long double>& errors) 
+void SaveResultsToFile(const std::string&               filename, 
+                       const std::vector<long double>&  nodes,
+                       const std::vector<long double>&  displacementsReal,
+                       const TMatrix<>&                 displacements,
+                       const std::vector<long double>&  errors) 
 {
     try {
         std::ofstream outFile(filename);
@@ -188,7 +189,6 @@ void SaveResultsToFile(const std::string& filename,
                     << std::setw(12) << (-EPS < errors[i] && errors[i] < EPS ? 0 : errors[i]) << '\n';
         }
         outFile.close();
-        std::cout << "Results successfully saved to " << filename << "\n";
     } catch (const std::exception& error) {
         std::cerr << "An error occurred while saving results: " << error.what() << "\n";
     }
@@ -252,6 +252,10 @@ int main(int argc, char* argv[]) {
         minimum, size, 
         step / (options->Type == EElementType::LINEAR ? 1 : 3)
     );
+
+    std::cout << (options->Type == EElementType::LINEAR ? "LINEAR" : "CUBIC") << ' ';
+    std::cout << options->ElementsAmount << std::endl;
+    std::cout << maxError << std::endl;
 
     const std::string filename = (options->Type == EElementType::LINEAR ? "linear" : "cubic")
                     + std::string("_") 

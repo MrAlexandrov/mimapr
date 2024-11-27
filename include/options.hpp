@@ -5,8 +5,8 @@
 namespace NOptions {
 
 enum class EElementType : int {
-    LINEAR = 1, 
-    CUBIC = 3 
+    LINEAR, 
+    CUBIC
 };
 
 enum class ERestrictionGrade { 
