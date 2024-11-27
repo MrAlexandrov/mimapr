@@ -8,7 +8,7 @@
 
 namespace NMatrix {
 
-template <typename T = double>
+template <typename T = long double>
 class TMatrix {
 private:
     struct ProxyRow {
