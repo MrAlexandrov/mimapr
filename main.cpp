@@ -119,7 +119,7 @@ long double realSolve(const long double x) {
 	return expl(-x) * C1 + expl(x) * C2 - 10;
 }
 
-void saveResultsToFile(const std::string& filename, 
+void SaveResultsToFile(const std::string& filename, 
                        const std::vector<long double>& nodes,
                        const std::vector<long double>& displacementsReal,
                        const TMatrix<long double>&     displacements,
