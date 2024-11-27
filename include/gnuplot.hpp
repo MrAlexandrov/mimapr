@@ -11,8 +11,8 @@ namespace {
 class TGnuplotPipe {
 public:
     explicit TGnuplotPipe(const std::string& command = "gnuplot -persist") 
-        : pipe(popen(command.c_str(), "w")) {
-        if (!pipe) {
+        : Pipe_(popen(command.c_str(), "w")) {
+        if (!Pipe_) {
             throw std::runtime_error("Failed to open Gnuplot process.");
         }
     }
@@ -20,41 +20,41 @@ public:
     TGnuplotPipe(const TGnuplotPipe&) = delete;
     TGnuplotPipe& operator=(const TGnuplotPipe&) = delete;
 
-    TGnuplotPipe(TGnuplotPipe&& other) noexcept : pipe(other.pipe) {
-        other.pipe = nullptr;
+    TGnuplotPipe(TGnuplotPipe&& other) noexcept : Pipe_(other.Pipe_) {
+        other.Pipe_ = nullptr;
     }
     TGnuplotPipe& operator=(TGnuplotPipe&& other) noexcept {
         if (this != &other) {
-            if (pipe) {
-                pclose(pipe);
+            if (Pipe_) {
+                pclose(Pipe_);
             }
-            pipe = other.pipe;
-            other.pipe = nullptr;
+            Pipe_ = other.Pipe_;
+            other.Pipe_ = nullptr;
         }
         return *this;
     }
 
     ~TGnuplotPipe() {
-        if (pipe) {
-            pclose(pipe);
+        if (Pipe_) {
+            pclose(Pipe_);
         }
     }
 
-    void write(const std::string& commands) {
-        if (!pipe) {
+    void Write(const std::string& commands) {
+        if (!Pipe_) {
             throw std::runtime_error("Pipe is closed or invalid.");
         }
-        if (fwrite(commands.c_str(), sizeof(char), commands.size(), pipe) != commands.size()) {
+        if (fwrite(commands.c_str(), sizeof(char), commands.size(), Pipe_) != commands.size()) {
             throw std::runtime_error("Failed to write to Gnuplot pipe.");
         }
     }
 
 private:
-    FILE* pipe;
+    FILE* Pipe_;
 };
 
 
-inline std::string generateGnuplotCommands(const std::string& filename, long double left, long double right) {
+inline std::string GenerateGnuplotCommands(const std::string& filename, long double left, long double right) {
     std::ostringstream commands;
     commands << "set term png size 800,600\n";
     commands << "set output '" << filename << ".png'\n";
@@ -70,17 +70,17 @@ inline std::string generateGnuplotCommands(const std::string& filename, long dou
 
 } // namespace
 
-inline void plot(const std::string& filename, long double left, long double right) {
+inline void Plot(const std::string& filename, long double left, long double right) {
     std::ifstream dataFile(filename);
     if (!dataFile.is_open()) {
         throw std::runtime_error("Error: Data file '" + filename + "' not found");
     }
 
     try {
-        const std::string commands = generateGnuplotCommands(filename, left, right);
+        const std::string commands = GenerateGnuplotCommands(filename, left, right);
 
         TGnuplotPipe gnuplot;
-        gnuplot.write(commands);
+        gnuplot.Write(commands);
         #ifdef PRINT
         std::cout << "Plot successfully created: " << filename << ".png\n";
         #endif // PRINT

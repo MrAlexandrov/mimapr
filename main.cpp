@@ -240,8 +240,8 @@ int main(int argc, char* argv[]) {
                     + std::to_string(opt->elementsAmount)
                     + std::string(".txt");
 
-    saveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
-    plot(filename, minimum, maximum);
+    SaveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
+    Plot(filename, minimum, maximum);
 
     return 0;
 }
