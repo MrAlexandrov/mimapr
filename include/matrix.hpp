@@ -100,7 +100,7 @@ public:
     TMatrix operator*(const T&) const;
     TMatrix operator/(const T&) const;
 	
-    TMatrix transpose() const;
+    TMatrix Transpose() const;
 
     bool operator==(const TMatrix&) const;
     // TODO: add concepts
@@ -333,7 +333,7 @@ TMatrix<T> TMatrix<T>::operator/(const T& scalar) const {
 }
 
 template <typename T>
-TMatrix<T> TMatrix<T>::transpose() const {
+TMatrix<T> TMatrix<T>::Transpose() const {
 	TMatrix<T> result(cols(), rows());
 	for (size_t i = 0; i < rows(); ++i) {
 		for (size_t j = 0; j < cols(); ++j) {
