@@ -62,10 +62,37 @@ void MakeCubicSLAU(TMatrix<>& resultMatrix,
     resultVector[index + 3][0]          += -D * L / 8;
 }
 
+void InitializeSLAU(TMatrix<>& stiffnessMatrix,
+                    TMatrix<>& loadVector,
+                    const EElementType& type,
+                    const int size,
+                    const long double step) 
+{
+    switch (type) {
+        case NOptions::EElementType::LINEAR: {
+            for (int i = 0; i < size - 1; ++i) {
+                MakeLinearSLAU(stiffnessMatrix, loadVector, step, i);
+            }
+            break;
+        }
+        case NOptions::EElementType::CUBIC: {
+            for (int i = 0; i < size - 3; i += 3) {
+                MakeCubicSLAU(stiffnessMatrix, loadVector, step, i);
+            }
+            break;
+        }
+        default: {
+            throw std::runtime_error("Unknown element type");
+        }
+    }
+}
+
 void ApplyRestriction(TMatrix<>& matrix, 
                       TMatrix<>& vector, 
                       const TRestriction& restriction, 
-                      const int row, const long double coef) {
+                      const int row, 
+                      const long double coef) 
+{
     switch (restriction.Grade) {
         case ERestrictionGrade::FIRST: {
             for (int col = 0, end = matrix.cols(); col < end; ++col) {
@@ -111,10 +138,35 @@ void SolveSLAU(TMatrix<>& xVector, TMatrix<>& aMatrix, TMatrix<>& bVector) {
     }
 }
 
-long double RealSolve(const long double x) {
+inline long double RealSolve(const long double x) {
 	long double C1 = -(5 * expl(8) * (-3 + 2 * expl(6))) / (1 + expl(12));
 	long double C2 = 5 * (2 + 3 * expl(6)) / (expl(2) * (1 + expl(12)));
 	return expl(-x) * C1 + expl(x) * C2 - 10;
+}
+
+long double CountError(std::vector<long double>& nodes, 
+                       std::vector<long double>& displacementsReal, 
+                       TMatrix<>& displacements,
+                       std::vector<long double>& errors,
+                       const long double minimum,
+                       const long double size,
+                       const long double add
+                       ) 
+{
+    long double result = 0;
+    long double nodePosition = minimum;
+    for (int i = 0; i < size; ++i) {
+        long double realValue = RealSolve(nodePosition);
+        long double error = std::fabs(displacements[i][0] - realValue);
+        result = std::fmax(result, error);
+
+        nodes[i] = nodePosition;
+        displacementsReal[i] = realValue;
+        errors[i] = error;
+
+        nodePosition += add;
+    }
+    return result;
 }
 
 void SaveResultsToFile(const std::string& filename, 
@@ -145,8 +197,8 @@ void SaveResultsToFile(const std::string& filename,
 } // namespace
 
 int main(int argc, char* argv[]) {
-    const std::optional<TOptions> opt = GetOptions(argc, argv);
-    if (!opt.has_value() || opt->Help) {
+    const std::optional<TOptions> options = GetOptions(argc, argv);
+    if (!options.has_value() || options->Help) {
         return 0;
     }
 
@@ -158,35 +210,19 @@ int main(int argc, char* argv[]) {
     const long double minimum = std::min_element(restrictions.begin(), restrictions.end())->Position;
     const long double maximum = std::max_element(restrictions.begin(), restrictions.end())->Position;
 
-    const int size = opt->ElementsAmount * (opt->Type == EElementType::LINEAR ? 1 : 3) + 1;
-    const long double step = static_cast<long double>(maximum - minimum) / opt->ElementsAmount;
+    const int size = options->ElementsAmount * (options->Type == EElementType::LINEAR ? 1 : 3) + 1;
+    const long double step = static_cast<long double>(maximum - minimum) / options->ElementsAmount;
 
     TMatrix<> stiffnessMatrix(size, size, 0.0);
     TMatrix<> loadVector(size, 1, 0.0);
     TMatrix<> displacements(size, 1, 0.0);
 
-    switch (opt->Type) {
-        case NOptions::EElementType::LINEAR: {
-            for (int i = 0; i < size - 1; ++i) {
-                MakeLinearSLAU(stiffnessMatrix, loadVector, step, i);
-            }
-            break;
-        }
-        case NOptions::EElementType::CUBIC: {
-            for (int i = 0; i < size - 3; i += 3) {
-                MakeCubicSLAU(stiffnessMatrix, loadVector, step, i);
-            }
-            break;
-        }
-        default: {
-            throw std::runtime_error("Unknown element type");
-        }
-    }
+    InitializeSLAU(stiffnessMatrix, loadVector, options->Type, size, step);
 
     auto getRowByPosition = [&](long double position) -> int {
         assert(minimum <= position && position <= maximum);
         long double shift = position - minimum;
-        if (opt->Type == EElementType::CUBIC) {
+        if (options->Type == EElementType::CUBIC) {
             shift *= 3;
         }
         int row = std::round(shift / step);
@@ -195,43 +231,31 @@ int main(int argc, char* argv[]) {
         return row;
     };
 
-    for (auto&& current : restrictions) {
-        ApplyRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.Position), A);
+    for (const auto& current : restrictions) {
+        ApplyRestriction(
+            stiffnessMatrix,
+            loadVector,
+            current, 
+            getRowByPosition(current.Position),
+            A
+        );
     }
 
     SolveSLAU(displacements, stiffnessMatrix, loadVector);
     
-    #ifdef PRINT
-    for (int i = 0; i < size; ++i) {
-        std::cout << "U(" << i << ") = " << displacements[i][0] << "\n";
-    }
-    #endif // PRINT
-    
-    long double maxError = 0.0;
     std::vector<long double> nodes(size);
-    std::vector<long double> errors(size);
     std::vector<long double> displacementsReal(size);
+    std::vector<long double> errors(size);
 
-    long double nodePosition = minimum;
-    for (int i = 0; i < size; ++i) {
-        long double realValue = RealSolve(nodePosition);
-        long double error = std::fabs(displacements[i][0] - realValue);
-        maxError = std::fmax(maxError, error);
+    long double maxError = CountError(
+        nodes, displacementsReal, displacements, errors, 
+        minimum, size, 
+        step / (options->Type == EElementType::LINEAR ? 1 : 3)
+    );
 
-        nodes[i] = nodePosition;
-        errors[i] = error;
-        displacementsReal[i] = realValue;
-
-        nodePosition += step / (opt->Type == EElementType::LINEAR ? 1 : 3);
-    }
-
-    // #ifdef PRINT
-    std::cout << "\nMax error: " << maxError << "\n";
-    // #endif // PRINT
-
-    const std::string filename = (opt->Type == EElementType::LINEAR ? "linear" : "cubic") 
+    const std::string filename = (options->Type == EElementType::LINEAR ? "linear" : "cubic")
                     + std::string("_") 
-                    + std::to_string(opt->ElementsAmount)
+                    + std::to_string(options->ElementsAmount)
                     + std::string(".txt");
 
     SaveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
