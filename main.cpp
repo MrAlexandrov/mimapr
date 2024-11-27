@@ -17,7 +17,7 @@ using namespace NMatrix;
 using namespace NGnuplot;
 using namespace NOptions;
 
-void makeLinearSLAU(TMatrix<long double>& resultMatrix, 
+void MakeLinearSLAU(TMatrix<long double>& resultMatrix, 
                     TMatrix<long double>& resultVector, 
                     const long double L, 
                     const long double a, const long double b, const long double c, const long double d, 
@@ -28,11 +28,11 @@ void makeLinearSLAU(TMatrix<long double>& resultMatrix,
     resultMatrix[index + 1][index]      +=  a / L   - b / 2 + c * L / 6;
     resultMatrix[index + 1][index + 1]  += -a / L   + b / 2 + c * L / 3;
 
-    resultVector[index][0]          += -d * L   / 2;
-    resultVector[index + 1][0]      += -d * L   / 2;
+    resultVector[index][0]              += -d * L   / 2;
+    resultVector[index + 1][0]          += -d * L   / 2;
 }
 
-void makeCubicSLAU(TMatrix<long double>& resultMatrix, 
+void MakeCubicSLAU(TMatrix<long double>& resultMatrix, 
                    TMatrix<long double>& resultVector, 
                    const long double L, 
                    const long double a, const long double b, const long double c, const long double d, 
@@ -58,31 +58,31 @@ void makeCubicSLAU(TMatrix<long double>& resultMatrix,
     resultMatrix[index + 3][index + 2]  +=  a * 189 / (40 * L) - b * 57 / 80 + c * 33 * L / 560;
     resultMatrix[index + 3][index + 3]  += -a *  37 / (10 * L) + b / 2       + c * 8  * L / 105;
 
-    resultVector[index][0]          += -d * L / 8;
-    resultVector[index + 1][0]      += -d * 3 * L / 8;
-    resultVector[index + 2][0]      += -d * 3 * L / 8;
-    resultVector[index + 3][0]      += -d * L / 8;
+    resultVector[index][0]              += -d * L / 8;
+    resultVector[index + 1][0]          += -d * 3 * L / 8;
+    resultVector[index + 2][0]          += -d * 3 * L / 8;
+    resultVector[index + 3][0]          += -d * L / 8;
 }
 
-void applyRestriction(TMatrix<long double>& matrix, 
-                       TMatrix<long double>& vector, 
-                       const TRestriction& restriction, 
-                       const int row, const long double coef) {
-    switch (restriction.grade) {
-        case ERestrictionGrade::First: {
+void ApplyRestriction(TMatrix<long double>& matrix, 
+                      TMatrix<long double>& vector, 
+                      const TRestriction& restriction, 
+                      const int row, const long double coef) {
+    switch (restriction.Grade) {
+        case ERestrictionGrade::FIRST: {
             for (int col = 0, end = matrix.cols(); col < end; ++col) {
                 matrix[row][col] = 0;
             }
             matrix[row][row] = 1;
-            vector[row][0] = restriction.value;
+            vector[row][0] = restriction.Value;
             break;
         }
-        case ERestrictionGrade::Second: {
-            vector[row][0] += coef * (row == 0 ? restriction.value : (row == matrix.rows() - 1 ? -restriction.value : restriction.value));
+        case ERestrictionGrade::SECOND: {
+            vector[row][0] += coef * (row == 0 ? restriction.Value : (row == matrix.rows() - 1 ? -restriction.Value : restriction.Value));
             break;
         }
-        case ERestrictionGrade::Third: {
-            matrix[row][row] += coef * restriction.value;
+        case ERestrictionGrade::THIRD: {
+            matrix[row][row] += coef * restriction.Value;
             break;
         }
         default: {
@@ -91,7 +91,7 @@ void applyRestriction(TMatrix<long double>& matrix,
     }
 }
 
-void solveSLAU(TMatrix<long double>& xVector, TMatrix<long double>& aMatrix, TMatrix<long double>& bVector) {
+void SolveSLAU(TMatrix<long double>& xVector, TMatrix<long double>& aMatrix, TMatrix<long double>& bVector) {
     int size = aMatrix.rows();
     for (int i = 0; i < size - 1; ++i) {
         long double baseElement = aMatrix[i][i];
@@ -113,7 +113,7 @@ void solveSLAU(TMatrix<long double>& xVector, TMatrix<long double>& aMatrix, TMa
     }
 }
 
-long double realSolve(const long double x) {
+long double RealSolve(const long double x) {
 	long double C1 = -(5 * expl(8) * (-3 + 2 * expl(6))) / (1 + expl(12));
 	long double C2 = 5 * (2 + 3 * expl(6)) / (expl(2) * (1 + expl(12)));
 	return expl(-x) * C1 + expl(x) * C2 - 10;
@@ -147,40 +147,40 @@ void SaveResultsToFile(const std::string& filename,
 } // namespace
 
 int main(int argc, char* argv[]) {
-    auto opt = getOptions(argc, argv);
-    if (!opt.has_value() || opt->help) {
+    auto opt = GetOptions(argc, argv);
+    if (!opt.has_value() || opt->Help) {
         return 0;
     }
 
     constexpr long double a = 1, b = 0, c = -1, d = -10;
-    constexpr TRestriction lower = {ERestrictionGrade::Second, 2, 10};
-    constexpr TRestriction upper = {ERestrictionGrade::First, 8, 5};
+    constexpr TRestriction LOWER = {ERestrictionGrade::SECOND, 2, 10};
+    constexpr TRestriction UPPER = {ERestrictionGrade::FIRST, 8, 5};
 
-    std::vector<TRestriction> Restrictions = {
-        lower,
-        upper,
+    std::vector<TRestriction> restrictions = {
+        LOWER,
+        UPPER,
     };
 
-    int minimum = (*std::min_element(Restrictions.begin(), Restrictions.end())).position;
-    int maximum = (*std::max_element(Restrictions.begin(), Restrictions.end())).position;
+    long double minimum = (*std::min_element(restrictions.begin(), restrictions.end())).Position;
+    long double maximum = (*std::max_element(restrictions.begin(), restrictions.end())).Position;
 
-    int size = opt->elementsAmount * (opt->type == EElementType::Linear ? 1 : 3) + 1;
-    long double step = static_cast<long double>(maximum - minimum) / opt->elementsAmount;
+    int size = opt->ElementsAmount * (opt->Type == EElementType::LINEAR ? 1 : 3) + 1;
+    long double step = static_cast<long double>(maximum - minimum) / opt->ElementsAmount;
 
     TMatrix<long double> stiffnessMatrix(size, size, 0.0);
     TMatrix<long double> loadVector(size, 1, 0.0);
     TMatrix<long double> displacements(size, 1, 0.0);
 
-    switch (opt->type) {
-        case NOptions::EElementType::Linear: {
+    switch (opt->Type) {
+        case NOptions::EElementType::LINEAR: {
             for (int i = 0; i < size - 1; ++i) {
-                makeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+                MakeLinearSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
             }
             break;
         }
-        case NOptions::EElementType::Cubic: {
+        case NOptions::EElementType::CUBIC: {
             for (int i = 0; i < size - 3; i += 3) {
-                makeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
+                MakeCubicSLAU(stiffnessMatrix, loadVector, step, a, b, c, d, i);
             }
             break;
         }
@@ -192,7 +192,7 @@ int main(int argc, char* argv[]) {
     auto getRowByPosition = [&](long double position) -> int {
         assert(minimum <= position && position <= maximum);
         long double shift = position - minimum;
-        if (opt->type == EElementType::Cubic) {
+        if (opt->Type == EElementType::CUBIC) {
             shift *= 3;
         }
         int row = std::round(shift / step);
@@ -201,11 +201,11 @@ int main(int argc, char* argv[]) {
         return row;
     };
 
-    for (auto&& current : Restrictions) {
-        applyRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.position), a);
+    for (auto&& current : restrictions) {
+        ApplyRestriction(stiffnessMatrix, loadVector, current, getRowByPosition(current.Position), a);
     }
 
-    solveSLAU(displacements, stiffnessMatrix, loadVector);
+    SolveSLAU(displacements, stiffnessMatrix, loadVector);
     
     #ifdef PRINT
     for (int i = 0; i < size; ++i) {
@@ -220,7 +220,7 @@ int main(int argc, char* argv[]) {
 
     long double nodePosition = minimum;
     for (int i = 0; i < size; ++i) {
-        long double realValue = realSolve(nodePosition);
+        long double realValue = RealSolve(nodePosition);
         long double error = std::fabs(displacements[i][0] - realValue);
         maxError = std::fmax(maxError, error);
 
@@ -228,16 +228,16 @@ int main(int argc, char* argv[]) {
         errors[i] = error;
         displacementsReal[i] = realValue;
 
-        nodePosition += step / (opt->type == EElementType::Linear ? 1 : 3);
+        nodePosition += step / (opt->Type == EElementType::LINEAR ? 1 : 3);
     }
 
     // #ifdef PRINT
     std::cout << "\nMax error: " << maxError << "\n";
     // #endif // PRINT
 
-    std::string filename = (opt->type == EElementType::Linear ? "linear" : "cubic") 
+    std::string filename = (opt->Type == EElementType::LINEAR ? "linear" : "cubic") 
                     + std::string("_") 
-                    + std::to_string(opt->elementsAmount)
+                    + std::to_string(opt->ElementsAmount)
                     + std::string(".txt");
 
     SaveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
