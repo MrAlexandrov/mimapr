@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace NOptions {
 
@@ -9,7 +11,17 @@ enum class EElementType : int {
     CUBIC
 };
 
-enum class ERestrictionGrade { 
+inline std::unordered_map<const EElementType, const std::string> EElementTypeToString {
+    { EElementType::LINEAR, "LINEAR" },
+    { EElementType::CUBIC, "CUBIC" }
+};
+
+inline std::unordered_map<const EElementType, const int> EElementTypeToInt {
+    { EElementType::LINEAR, 1 },
+    { EElementType::CUBIC, 3 }
+};
+
+enum class ERestrictionGrade : int { 
     FIRST, 
     SECOND, 
     THIRD 

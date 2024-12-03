@@ -10,7 +10,6 @@
 #include "initialize.hpp"
 #include "matrix.hpp"
 #include "gnuplot.hpp"
-#include "options.hpp"
 
 namespace {
 
@@ -210,7 +209,7 @@ int main(int argc, char* argv[]) {
     const long double minimum = std::min_element(restrictions.begin(), restrictions.end())->Position;
     const long double maximum = std::max_element(restrictions.begin(), restrictions.end())->Position;
 
-    const int size = options->ElementsAmount * (options->Type == EElementType::LINEAR ? 1 : 3) + 1;
+    const int size = options->ElementsAmount * EElementTypeToInt[options->Type] + 1;
     const long double step = static_cast<long double>(maximum - minimum) / options->ElementsAmount;
 
     TMatrix<> stiffnessMatrix(size, size, 0.0);
@@ -222,9 +221,7 @@ int main(int argc, char* argv[]) {
     auto getRowByPosition = [&](long double position) -> int {
         assert(minimum <= position && position <= maximum);
         long double shift = position - minimum;
-        if (options->Type == EElementType::CUBIC) {
-            shift *= 3;
-        }
+        shift *= EElementTypeToInt[options->Type];
         int row = std::round(shift / step);
         row = std::max(0, row);
         row = std::min(size - 1, row);
@@ -250,14 +247,14 @@ int main(int argc, char* argv[]) {
     long double maxError = CountError(
         nodes, displacementsReal, displacements, errors, 
         minimum, size, 
-        step / (options->Type == EElementType::LINEAR ? 1 : 3)
+        step / EElementTypeToInt[options->Type]
     );
 
-    std::cout << (options->Type == EElementType::LINEAR ? "LINEAR" : "CUBIC") << ' ';
+    std::cout << EElementTypeToString[options->Type] << ' ';
     std::cout << options->ElementsAmount << std::endl;
     std::cout << maxError << std::endl;
 
-    const std::string filename = (options->Type == EElementType::LINEAR ? "linear" : "cubic")
+    const std::string filename = EElementTypeToString[options->Type]
                     + std::string("_") 
                     + std::to_string(options->ElementsAmount)
                     + std::string(".txt");
