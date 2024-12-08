@@ -63,6 +63,7 @@ public:
         {}
 
     void SetXValues(const std::vector<long double> values) {
+        assert(Datas_.empty() || Datas_.front().GetData().size() == values.size());
         XValues_ = values;
     }
 
@@ -75,6 +76,8 @@ public:
     }
 
     void AddGraphic(std::string&& name, std::vector<long double> data) {
+        assert(XValues_.empty() || XValues_.size() == data.size());
+        assert(Datas_.empty() || Datas_.front().GetData().size() == data.size());
         Datas_.emplace_back(name, data);
     }
 

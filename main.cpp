@@ -1,11 +1,10 @@
 #include <algorithm>
-#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <cmath>
-#include <fstream>
 #include <cassert>
+#include <vector>
 
 #include "initialize.hpp"
 #include "matrix.hpp"
@@ -90,8 +89,7 @@ void InitializeSLAU(TMatrix<>&              stiffnessMatrix,
 void ApplyRestriction(TMatrix<>&            matrix, 
                       TMatrix<>&            vector, 
                       const TRestriction&   restriction, 
-                      const int             row, 
-                      const long double     coef) 
+                      const int             row) 
 {
     switch (restriction.Grade) {
         case ERestrictionGrade::FIRST: {
@@ -103,11 +101,11 @@ void ApplyRestriction(TMatrix<>&            matrix,
             break;
         }
         case ERestrictionGrade::SECOND: {
-            vector[row][0] += coef * (row == matrix.rows() - 1 ? -restriction.Value : restriction.Value);
+            vector[row][0] += A * (row == matrix.rows() - 1 ? -restriction.Value : restriction.Value);
             break;
         }
         case ERestrictionGrade::THIRD: {
-            matrix[row][row] += coef * restriction.Value;
+            matrix[row][row] += A * restriction.Value;
             break;
         }
         default: {
@@ -169,30 +167,6 @@ long double CountError(std::vector<long double>&    nodes,
     return result;
 }
 
-void SaveResultsToFile(const std::string&               filename, 
-                       const std::vector<long double>&  nodes,
-                       const std::vector<long double>&  displacementsReal,
-                       const TMatrix<>&                 displacements,
-                       const std::vector<long double>&  errors) 
-{
-    try {
-        std::ofstream outFile(filename);
-        if (!outFile.is_open()) {
-            throw std::ios_base::failure("Failed to open the output file: " + filename);
-        }
-        constexpr long double EPS = 1e-12;
-        for (size_t i = 0, end = nodes.size(); i < end; ++i) {
-            outFile << std::setw(4) << nodes[i]
-                    << std::setw(12) << (-EPS < displacementsReal[i] && displacementsReal[i] < EPS ? 0 : displacementsReal[i])
-                    << std::setw(12) << (-EPS < displacements[i][0] && displacements[i][0] < EPS ? 0 : displacements[i][0])
-                    << std::setw(12) << (-EPS < errors[i] && errors[i] < EPS ? 0 : errors[i]) << '\n';
-        }
-        outFile.close();
-    } catch (const std::exception& error) {
-        std::cerr << "An error occurred while saving results: " << error.what() << "\n";
-    }
-}
-
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -233,8 +207,7 @@ int main(int argc, char* argv[]) {
             stiffnessMatrix,
             loadVector,
             current, 
-            getRowByPosition(current.Position),
-            A
+            getRowByPosition(current.Position)
         );
     }
 
@@ -259,13 +232,33 @@ int main(int argc, char* argv[]) {
         + std::string("_") 
         + std::to_string(options->ElementsAmount);
     
-    TPlotter graphics(filename);
-    graphics.SetXRangeLeft(minimum);
-    graphics.SetXRangeRight(maximum);
-    graphics.SetXValues(nodes);
-    graphics.AddGraphic("displacements", displacements.GetColumn(0));
-    graphics.AddGraphic("errors", errors);
-    graphics.AddGraphic("displacements real", displacementsReal);
-    graphics.Plot();
+    {
+        TPlotter graphics(filename);
+        graphics.SetXRangeLeft(minimum);
+        graphics.SetXRangeRight(maximum);
+        graphics.SetXValues(nodes);
+        graphics.AddGraphic("displacements", displacements.GetColumn(0));
+        graphics.AddGraphic("errors", errors);
+        graphics.AddGraphic("displacements real", displacementsReal);
+        graphics.Plot();
+    }
+    
+    const int derivativeSize = size - 1;
+    std::vector<long double> derivativeNodes;
+    std::vector<long double> derivativeDisplacements;
+
+    for (int i = 0; i < derivativeSize; ++i) {
+        derivativeNodes.emplace_back(nodes[i] + (nodes[i + 1] - nodes[i]) / 2);
+        derivativeDisplacements.emplace_back(displacements[i + 1][0] - displacements[i][0]);
+    }
+
+    {
+        TPlotter derivative("DERIVATIVE");
+        derivative.SetXRangeLeft(minimum);
+        derivative.SetXRangeRight(maximum);
+        derivative.SetXValues(derivativeNodes);
+        derivative.AddGraphic("derivativeDisplacements", derivativeDisplacements);
+        derivative.Plot();
+    }
     return 0;
 }
