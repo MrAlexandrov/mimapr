@@ -9,12 +9,12 @@
 
 #include "initialize.hpp"
 #include "matrix.hpp"
-#include "gnuplot.hpp"
+#include "plotter.hpp"
 
 namespace {
 
 using namespace NMatrix;
-using namespace NGnuplot;
+using namespace NPlotter;
 using namespace NOptions;
 
 void MakeLinearSLAU(TMatrix<>&          resultMatrix, 
@@ -254,13 +254,18 @@ int main(int argc, char* argv[]) {
     std::cout << options->ElementsAmount << std::endl;
     std::cout << maxError << std::endl;
 
-    const std::string filename = EElementTypeToString[options->Type]
-                    + std::string("_") 
-                    + std::to_string(options->ElementsAmount)
-                    + std::string(".txt");
-
-    SaveResultsToFile(filename, nodes, displacementsReal, displacements, errors);
-    Plot(filename, minimum, maximum);
-
+    const std::string filename = 
+        EElementTypeToString[options->Type]
+        + std::string("_") 
+        + std::to_string(options->ElementsAmount);
+    
+    TPlotter graphics(filename);
+    graphics.SetXRangeLeft(minimum);
+    graphics.SetXRangeRight(maximum);
+    graphics.SetXValues(nodes);
+    graphics.AddGraphic("displacements", displacements.GetColumn(0));
+    graphics.AddGraphic("errors", errors);
+    graphics.AddGraphic("displacements real", displacementsReal);
+    graphics.Plot();
     return 0;
 }

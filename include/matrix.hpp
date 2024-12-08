@@ -101,6 +101,7 @@ public:
     TMatrix operator/(const T&) const;
 	
     TMatrix Transpose() const;
+    std::vector<T> GetColumn(int column) const;
 
     bool operator==(const TMatrix&) const;
     // TODO: add concepts
@@ -358,6 +359,17 @@ std::ostream& operator<<(std::ostream& out, const TMatrix<T>& matrix) {
 		out << '\n';
 	}
 	return out;
+}
+
+template <typename T>
+std::vector<T> TMatrix<T>::GetColumn(int column) const {
+    std::vector<T> result;
+    int size = this->rows();
+    result.reserve(size);
+    for (int row = 0, end = size; row < end; ++row) {
+        result.push_back((*this)[row][column]);
+    }
+    return result;
 }
 
 } // namespace NMatrix

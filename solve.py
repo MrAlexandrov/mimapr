@@ -42,7 +42,7 @@ def run_prog(code_folder):
             os.rename(os.path.join(code_folder, file), os.path.join(img_folder, file))
 
     for file in os.listdir(code_folder):
-        if file.endswith('.txt') and file != "CMakeLists.txt":
+        if file.endswith('.csv'):
             os.rename(os.path.join(code_folder, file), os.path.join(res_folder, file))
 
     return
