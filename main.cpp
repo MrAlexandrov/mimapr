@@ -35,7 +35,7 @@ void MakeCubicSLAU(TMatrix<>&           resultMatrix,
                    TMatrix<>&           resultVector, 
                    const long double    L,
                    const int            index) 
-{   
+{
     resultMatrix[index][index]          += -A *  37 / (10 * L) - B / 2       + C * 8  * L / 105;
     resultMatrix[index][index + 1]      +=  A * 189 / (40 * L) + B * 57 / 80 + C * 33 * L / 560;
     resultMatrix[index][index + 2]      += -A *  27 / (20 * L) - B * 3  / 10 - C * 3  * L / 140;
@@ -92,6 +92,7 @@ void ApplyRestriction(TMatrix<>&            matrix,
                       const TRestriction&   restriction, 
                       const int             row) 
 {
+    assert(row == 0 || row == matrix.rows() - 1);
     switch (restriction.Grade) {
         case ERestrictionGrade::FIRST: {
             for (int col = 0, end = matrix.cols(); col < end; ++col) {
@@ -102,7 +103,7 @@ void ApplyRestriction(TMatrix<>&            matrix,
             break;
         }
         case ERestrictionGrade::SECOND: {
-            vector[row][0] += A * (row == matrix.rows() - 1 ? -restriction.Value : restriction.Value);
+            vector[row][0] += A * restriction.Value;
             break;
         }
         case ERestrictionGrade::THIRD: {
@@ -157,10 +158,10 @@ std::vector<long double> FillNodes(
     return result;
 }
 
-std::vector <long double> FillRealValues(const std::vector<long double>& positions, auto function) {
+std::vector<long double> FillRealValues(const std::vector<long double>& positions, const auto& function) {
     std::vector<long double> result;
-    for (auto i : positions) {
-        result.emplace_back(function(i));
+    for (const auto& x : positions) {
+        result.emplace_back(function(x));
     }
     return result;
 }
@@ -214,16 +215,17 @@ int main(int argc, char* argv[]) {
 
     SolveSLAU(displacements, stiffnessMatrix, loadVector);
     
-    std::vector<long double> nodes = FillNodes(minimum, maximum, size, step / EElementTypeToInt[options->Type]);
+    long double add = step / EElementTypeToInt[options->Type];
+    std::vector<long double> nodes = FillNodes(minimum, maximum, size, add);
     std::vector<long double> displacementsReal = FillRealValues(nodes, RealSolve);
-    std::vector<long double> errors = FillErrors(nodes, displacementsReal);
+    std::vector<long double> errors = FillErrors(displacements.GetColumn(0), displacementsReal);
 
     long double maxError = (*std::max_element(errors.begin(), errors.end()));
 
     std::cout << EElementTypeToString[options->Type] << ' ';
     std::cout << options->ElementsAmount << std::endl;
-    std::cout << maxError << std::endl;
-    
+    std::cout << "Maximal error: " << maxError << std::endl;
+
     {
         const std::string filename = 
             EElementTypeToString[options->Type]
@@ -235,17 +237,39 @@ int main(int argc, char* argv[]) {
         graphics.SetXRangeRight(maximum);
         graphics.SetXValues(nodes);
         graphics.AddGraphic("displacements", displacements.GetColumn(0));
-        graphics.AddGraphic("displacements real", displacementsReal);
+        // graphics.AddGraphic("displacements real", displacementsReal);
         graphics.Plot();
+
+        {
+        long double d2 = (displacements[2][0] - displacements[1][0]) / add;
+        long double d1 = (displacements[1][0] - displacements[0][0]) / add;
+        // std::cout << d2 << std::endl;
+        // std::cout << d1 << std::endl;
+        long double value = d1 - (d2 - d1) / 2;
+        std::cout << "Approximate du/dx(2): " << value << std::endl;
+        std::cout << "Absolute error: " << std::fabs(value - 10) << std::endl;
+        std::cout << "Relative error: " << (std::fabs(value - 10) / std::fabs(value)) * 100 << "%" << std::endl;
+        }
+
+        {
+        long double d2 = (displacements[size - 1][0] - displacements[size - 2][0]) / add;
+        long double d1 = (displacements[size - 2][0] - displacements[size - 3][0]) / add;
+        // std::cout << d2 << std::endl;
+        // std::cout << d1 << std::endl;
+        long double value = d1 + (d2 - d1) / 2;
+        std::cout << "Approximate du/dx(8)=u, U(8): " << value << ", " << displacements[size - 1][0] << std::endl;
+        std::cout << "Absolute error: " << std::fabs(value - displacements[size - 1][0]) << std::endl;
+        std::cout << "Relative error: " << (std::fabs(value - displacements[size - 1][0]) / std::fabs(value)) * 100 << "%" << std::endl;
+        }
     }
-    
+
     const int derivativeSize = size - 1;
     std::vector<long double> derivativeNodes;
     std::vector<long double> derivativeDisplacements;
 
     for (int i = 0; i < derivativeSize; ++i) {
         derivativeNodes.emplace_back(nodes[i] + (nodes[i + 1] - nodes[i]) / 2);
-        derivativeDisplacements.emplace_back(displacements[i + 1][0] - displacements[i][0]);
+        derivativeDisplacements.emplace_back((displacements[i + 1][0] - displacements[i][0]) / step);
     }
 
     {

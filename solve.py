@@ -8,7 +8,7 @@ def run_prog(code_folder):
         raise RuntimeError("Сборка завершилась с ошибкой.")
 
     results_table = {}
-    sizes = [1, 3, 20, 40]
+    sizes = [1, 3, 20, 40, 100, 200]
     ke_types = ['linear', 'cubic']
 
     program_path = os.path.join(code_folder, 'build', 'main')
