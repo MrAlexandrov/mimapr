@@ -8,6 +8,7 @@
 
 #include "initialize.hpp"
 #include "matrix.hpp"
+#include "options.hpp"
 #include "plotter.hpp"
 
 namespace {
@@ -142,27 +143,35 @@ inline long double RealSolve(const long double x) {
 	return expl(-x) * C1 + expl(x) * C2 - 10;
 }
 
-long double CountError(std::vector<long double>&    nodes, 
-                       std::vector<long double>&    displacementsReal, 
-                       TMatrix<>&                   displacements,
-                       std::vector<long double>&    errors,
-                       const long double            minimum,
-                       const long double            size,
-                       const long double            add
-                       ) 
+std::vector<long double> FillNodes(
+                                    long double minimum, 
+                                    long double maximum,
+                                    long double size, 
+                                    long double add) 
 {
-    long double result = 0;
-    long double nodePosition = minimum;
-    for (int i = 0; i < size; ++i) {
-        long double realValue = RealSolve(nodePosition);
-        long double error = std::fabs(displacements[i][0] - realValue);
-        result = std::fmax(result, error);
+    std::vector<long double> result;
+    long double current = minimum;
+    for (int i = 0; i < size; ++i, current += add) {
+        result.push_back(current);
+    }
+    return result;
+}
 
-        nodes[i] = nodePosition;
-        displacementsReal[i] = realValue;
-        errors[i] = error;
+std::vector <long double> FillRealValues(const std::vector<long double>& positions, auto function) {
+    std::vector<long double> result;
+    for (auto i : positions) {
+        result.emplace_back(function(i));
+    }
+    return result;
+}
 
-        nodePosition += add;
+std::vector<long double> FillErrors(const std::vector<long double>& solution,
+                       const std::vector<long double>& realValues) 
+{
+    assert(solution.size() == realValues.size());
+    std::vector<long double> result;
+    for (int i = 0, end = solution.size(); i < end; ++i) {
+        result.emplace_back(std::fabs(solution[i] - realValues[i]));
     }
     return result;
 }
@@ -213,15 +222,11 @@ int main(int argc, char* argv[]) {
 
     SolveSLAU(displacements, stiffnessMatrix, loadVector);
     
-    std::vector<long double> nodes(size);
-    std::vector<long double> displacementsReal(size);
-    std::vector<long double> errors(size);
+    std::vector<long double> nodes = FillNodes(minimum, maximum, size, step / EElementTypeToInt[options->Type]);
+    std::vector<long double> displacementsReal = FillRealValues(nodes, RealSolve);
+    std::vector<long double> errors = FillErrors(nodes, displacementsReal);
 
-    long double maxError = CountError(
-        nodes, displacementsReal, displacements, errors, 
-        minimum, size, 
-        step / EElementTypeToInt[options->Type]
-    );
+    long double maxError = (*std::max_element(errors.begin(), errors.end()));
 
     std::cout << EElementTypeToString[options->Type] << ' ';
     std::cout << options->ElementsAmount << std::endl;
