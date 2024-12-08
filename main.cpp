@@ -184,14 +184,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    const std::vector<TRestriction> restrictions = {
-        LOWER,
-        UPPER,
-    };
-
-    const long double minimum = std::min_element(restrictions.begin(), restrictions.end())->Position;
-    const long double maximum = std::max_element(restrictions.begin(), restrictions.end())->Position;
-
     const int size = options->ElementsAmount * EElementTypeToInt[options->Type] + 1;
     const long double step = static_cast<long double>(maximum - minimum) / options->ElementsAmount;
 
@@ -231,19 +223,18 @@ int main(int argc, char* argv[]) {
     std::cout << EElementTypeToString[options->Type] << ' ';
     std::cout << options->ElementsAmount << std::endl;
     std::cout << maxError << std::endl;
-
-    const std::string filename = 
-        EElementTypeToString[options->Type]
-        + std::string("_") 
-        + std::to_string(options->ElementsAmount);
     
     {
+        const std::string filename = 
+            EElementTypeToString[options->Type]
+            + std::string("_") 
+            + std::to_string(options->ElementsAmount);
+
         TPlotter graphics(filename);
         graphics.SetXRangeLeft(minimum);
         graphics.SetXRangeRight(maximum);
         graphics.SetXValues(nodes);
         graphics.AddGraphic("displacements", displacements.GetColumn(0));
-        graphics.AddGraphic("errors", errors);
         graphics.AddGraphic("displacements real", displacementsReal);
         graphics.Plot();
     }
@@ -258,7 +249,13 @@ int main(int argc, char* argv[]) {
     }
 
     {
-        TPlotter derivative("DERIVATIVE");
+        const std::string filename =
+            std::string("DERIVATIVE_")
+            + EElementTypeToString[options->Type]
+            + std::string("_") 
+            + std::to_string(options->ElementsAmount);
+
+        TPlotter derivative(filename);
         derivative.SetXRangeLeft(minimum);
         derivative.SetXRangeRight(maximum);
         derivative.SetXValues(derivativeNodes);
