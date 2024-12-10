@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
         // std::cout << d2 << std::endl;
         // std::cout << d1 << std::endl;
         long double value = d1 - (d2 - d1) / 2;
-        std::cout << "Approximate du/dx(2): " << value << std::endl;
+        // std::cout << "Approximate du/dx(2): " << value << std::endl;
         std::cout << "Absolute error: " << std::fabs(value - 10) << std::endl;
         std::cout << "Relative error: " << (std::fabs(value - 10) / std::fabs(value)) * 100 << "%" << std::endl;
         }
@@ -257,7 +257,7 @@ int main(int argc, char* argv[]) {
         // std::cout << d2 << std::endl;
         // std::cout << d1 << std::endl;
         long double value = d1 + (d2 - d1) / 2;
-        std::cout << "Approximate du/dx(8)=u, U(8): " << value << ", " << displacements[size - 1][0] << std::endl;
+        // std::cout << "Approximate du/dx(8)=u, U(8): " << value << ", " << displacements[size - 1][0] << std::endl;
         std::cout << "Absolute error: " << std::fabs(value - displacements[size - 1][0]) << std::endl;
         std::cout << "Relative error: " << (std::fabs(value - displacements[size - 1][0]) / std::fabs(value)) * 100 << "%" << std::endl;
         }
