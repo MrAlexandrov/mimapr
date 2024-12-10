@@ -154,7 +154,7 @@ private:
     std::string YLabel_;
     long double XRangeLeft_;
     long double XRangeRight_;
-    std::vector <long double> XValues_;
+    std::vector<long double> XValues_;
     std::vector<TGraph> Datas_;
 };
 

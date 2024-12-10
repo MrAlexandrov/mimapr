@@ -144,9 +144,12 @@ inline long double RealSolve(const long double x) {
 	return expl(-x) * C1 + expl(x) * C2 - 10;
 }
 
+inline long double RealSolveAdditional(const long double x) {
+    return static_cast<long double>(5) * (expl(8 - x) + 2 * expl(x - 2) + expl(x + 4) - 2);
+}
+
 std::vector<long double> FillNodes(
-                                    long double minimum, 
-                                    long double maximum,
+                                    long double minimum,
                                     long double size, 
                                     long double add) 
 {
@@ -175,6 +178,14 @@ std::vector<long double> FillErrors(const std::vector<long double>& solution,
         result.emplace_back(std::fabs(solution[i] - realValues[i]));
     }
     return result;
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& other) {
+    for (const auto& i : other) {
+        out << i << ' ';
+    }
+    return out;
 }
 
 } // namespace
@@ -214,11 +225,17 @@ int main(int argc, char* argv[]) {
     }
 
     SolveSLAU(displacements, stiffnessMatrix, loadVector);
-    
+
     long double add = step / EElementTypeToInt[options->Type];
-    std::vector<long double> nodes = FillNodes(minimum, maximum, size, add);
+    std::vector<long double> nodes = FillNodes(minimum, size, add);
     std::vector<long double> displacementsReal = FillRealValues(nodes, RealSolve);
     std::vector<long double> errors = FillErrors(displacements.GetColumn(0), displacementsReal);
+
+    // std::cout << nodes << std::endl;
+    // std::cout << displacementsReal << std::endl;
+    // std::cout << displacements << std::endl;
+    // std::cout << errors << std::endl;
+    // return 0;
 
     long double maxError = (*std::max_element(errors.begin(), errors.end()));
 

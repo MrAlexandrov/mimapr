@@ -27,7 +27,7 @@ run: build
 	@cd ${BUILD_DIR} && ./${PROJECT_NAME} $(ARGS)
 
 run-all: build
-	@echo "==> Running ${PROJECT_NAME} for 1, 3, 20, 40 elements"
+	@echo "==> Running ${PROJECT_NAME} for different amount of elements"
 	@python3 solve.py
 
 clean:
