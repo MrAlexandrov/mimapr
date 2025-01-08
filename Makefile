@@ -24,7 +24,7 @@ test: build
 
 run: build
 	@echo "==> Running ${PROJECT_NAME} with arguments: $(ARGS)"
-	@cd ${BUILD_DIR} && ./${PROJECT_NAME} $(ARGS)
+	@${BUILD_DIR}/${PROJECT_NAME} $(ARGS)
 
 run-all: build
 	@echo "==> Running ${PROJECT_NAME} for different amount of elements"
@@ -38,4 +38,7 @@ install:
 	sudo apt-get update
 	sudo apt-get install -y cmake clang libgtest-dev
 
-.PHONY: all build test run run-all clean install
+update:
+	git submodule update --remote --merge
+
+.PHONY: all build test run run-all clean install update

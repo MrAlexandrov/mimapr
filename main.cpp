@@ -92,10 +92,10 @@ void ApplyRestriction(TMatrix<>&            matrix,
                       const TRestriction&   restriction, 
                       const int             row) 
 {
-    assert(row == 0 || row == matrix.rows() - 1);
+    assert(row == 0 || row == matrix.Rows() - 1);
     switch (restriction.Grade) {
         case ERestrictionGrade::FIRST: {
-            for (int col = 0, end = matrix.cols(); col < end; ++col) {
+            for (int col = 0, end = matrix.Cols(); col < end; ++col) {
                 matrix[row][col] = 0;
             }
             matrix[row][row] = 1;
@@ -117,7 +117,7 @@ void ApplyRestriction(TMatrix<>&            matrix,
 }
 
 void SolveSLAU(TMatrix<>& xVector, TMatrix<>& aMatrix, TMatrix<>& bVector) {
-    int size = aMatrix.rows();
+    int size = aMatrix.Rows();
     for (int i = 0; i < size - 1; ++i) {
         long double baseElement = aMatrix[i][i];
         for (int j = i + 1; j < size; ++j) {
