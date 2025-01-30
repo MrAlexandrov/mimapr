@@ -3,82 +3,107 @@
 #include <cstdio>
 #include <exception>
 #include <iomanip>
+#include <optional>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <iostream>
+#include <memory>
+#include <typeindex>
+#include <typeinfo>
 
 namespace NPlotter {
 
-namespace {
+template <typename YType>
+class TGraph;
 
-class TGraph {
+class IGraph {
 public:
-    TGraph(const std::string& title, const std::vector<long double> data)
+    virtual ~IGraph() = default;
+    
+    virtual std::string GetTitle() const = 0;
+    virtual std::optional<std::string> GetColor() const = 0;
+    
+    virtual std::type_index GetDataType() const = 0;
+
+    virtual std::vector<double> GetDataAsDouble() const = 0;
+
+    template <typename T>
+    const std::vector<T>& GetOriginalData() const {
+        if (GetDataType() != typeid(T)) {
+            throw std::bad_cast();
+        }
+        return dynamic_cast<const TGraph<T>*>(this)->GetData();
+    }
+
+    virtual size_t GetSize() const = 0;
+};
+
+template <typename YType>
+class TGraph : public IGraph {
+public:
+    using value_type = YType;
+
+    TGraph(const std::string& title, const std::vector<YType>& data)
         : Title_(title)
         , Data_(data)
-        {}
+        {
+        }
 
-    void SetTitle(std::string&& title) {
-        Title_ = std::move(title);
+    TGraph(const std::string& title, const std::vector<YType>& data, const std::string& color)
+        : Title_(title)
+        , Data_(data)
+        , Color_(color)
+        {
+        }
+
+    std::string GetTitle() const override { return Title_; }
+    std::optional<std::string> GetColor() const override { return Color_; }
+    
+    size_t GetSize() const override { return Data_.size(); }
+
+    std::type_index GetDataType() const override { return typeid(YType); }
+
+    std::vector<double> GetDataAsDouble() const override {
+        return std::vector<double>(Data_.begin(), Data_.end());
     }
 
-    void SetData(const std::vector<long double>& data) {
-        Data_ = data;
-    }
-
-    std::string GetTitle() const {
-        return Title_;
-    }
-
-    std::vector<long double> GetData() const {
+    const std::vector<YType>& GetData() const {
         return Data_;
-    }
-
-    long double GetData(int index) const {
-        assert(0 <= index && index < Data_.size());
-        return Data_[index];
     }
 
 private:
     std::string Title_;
-    std::vector<long double> Data_;
+    std::vector<YType> Data_;
+    std::optional<std::string> Color_;
 };
 
-} // namespace
-
+template <typename XType>
 class TPlotter final {
 public:
     explicit TPlotter(const std::string& filename)
-        : ImageName_(filename + ".png")
-        , DataFile_(filename + ".csv")
-        , Width_(800)
+        : Width_(800)
         , Height_(600)
-        , Title_("Displacements and Errors")
-        , XLabel_("Node position")
-        , YLabel_("Values")
-        , XRangeLeft_(0.0)
-        , XRangeRight_(10.0)
-        {}
+        , ImageName_(filename + ".png")
+        , DataFile_(filename + ".csv")
+        , Title_("Title")
+        , XLabel_("Time, seconds")
+        , YLabel_("Phi value")
+        {
+        }
 
-    void SetXValues(const std::vector<long double> values) {
-        assert(Datas_.empty() || Datas_.front().GetData().size() == values.size());
+    void SetXValues(const std::vector<XType>& values) {
+        assert(!DataSize_.has_value() || DataSize_ == values.size());
+        if (!DataSize_.has_value()) {
+            DataSize_ = values.size();
+        }
         XValues_ = values;
     }
 
-    void SetXRangeLeft(long double value) {
-        XRangeLeft_ = value;
-    }
-
-    void SetXRangeRight(long double value) {
-        XRangeRight_ = value;
-    }
-
-    void AddGraphic(std::string&& name, std::vector<long double> data) {
-        assert(XValues_.empty() || XValues_.size() == data.size());
-        assert(Datas_.empty() || Datas_.front().GetData().size() == data.size());
-        Datas_.emplace_back(name, data);
+    template <typename YType, typename... Args>
+    void EmplaceGraphic(Args&&... args) {
+        Graphs_.emplace_back(std::make_unique<TGraph<YType>>(std::forward<Args>(args)...));
     }
 
     void Plot() const {
@@ -101,21 +126,16 @@ public:
     }
 
 private:
-    long double PrintValue(long double value) const {
-        constexpr long double EPS = 1e-12; 
-        return (-EPS < value && value < EPS ? 0 : value);
-    }
-
     void SaveDataToFile() const {
-        int size = Datas_.front().GetData().size();
         std::ofstream outFile(DataFile_);
         if (!outFile.is_open()) {
             throw std::ios_base::failure("Failed to open the output file: " + DataFile_);
         }
-        for (int row = 0; row < size; ++row) {
-            outFile << std::setw(4) << PrintValue(XValues_[row]);
-            for (auto& data : Datas_) {
-                outFile << std::setw(12) << PrintValue(data.GetData(row));
+
+        for (int row = 0; row < DataSize_; ++row) {
+            outFile << std::setw(12) << XValues_[row] << "\t";
+            for (const auto& graph : Graphs_) {
+                outFile << std::setw(12) << graph->GetDataAsDouble()[row] << "\t";
             }
             outFile << "\n";
         }
@@ -123,7 +143,6 @@ private:
         outFile.close();
     }
 
-private:
     std::string GenerateGnuplotCommands() const {
         std::ostringstream commands;
         commands << "set term png size " << Width_ << "," << Height_ << "\n";
@@ -131,12 +150,12 @@ private:
         commands << "set title '" << Title_ << "'\n";
         commands << "set xlabel '" << XLabel_ << "'\n";
         commands << "set ylabel '" << YLabel_ << "'\n";
-        commands << "set xrange [" << XRangeLeft_ << ":" << XRangeRight_ << "]\n";
+        commands << "set xrange [" << XValues_.front() << ":" << XValues_.back() << "]\n";
         commands << "plot ";
 
         int index = 2;
-        for (const auto& data : Datas_) {
-            commands << "'" << DataFile_ << "' using 1:" << index++ << " with lines title '" << data.GetTitle() << "', ";
+        for (const auto& data : Graphs_) {
+            commands << "'" << DataFile_ << "' using 1:" << index++ << " with lines title '" << data->GetTitle() << "', ";
         }
         std::string result = commands.str();
         result.pop_back();
@@ -152,10 +171,9 @@ private:
     std::string Title_;
     std::string XLabel_;
     std::string YLabel_;
-    long double XRangeLeft_;
-    long double XRangeRight_;
-    std::vector<long double> XValues_;
-    std::vector<TGraph> Datas_;
+    std::vector<XType> XValues_;
+    std::optional<int> DataSize_;
+    std::vector<std::unique_ptr<IGraph>> Graphs_;
 };
 
-} // NPlotter
+}  // namespace NPlotter
